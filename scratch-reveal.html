@@ -517,7 +517,7 @@
         </div>
         
         <div class="stage-info">
-            <span id="stageNumber">ステージ 1 / 100</span>
+            <span id="stageNumber">ステージ 1 / 30</span>
         </div>
 
         <div class="play-stage-selector" id="playStageSelector"></div>
@@ -564,6 +564,7 @@
 
             <button class="save-btn" id="saveStageBtn">このステージを保存</button>
             <button class="save-btn" id="resetStageBtn" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">このステージをリセット</button>
+            <button class="save-btn" id="resetFromCurrentBtn" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);">このステージ以降をリセット</button>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
                 <button class="save-btn" id="exportDataBtn" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">💾 データをエクスポート</button>
@@ -599,7 +600,7 @@
         <div class="ending-screen" id="endingScreen">
             <h2>🎉 おめでとうございます！ 🎉</h2>
             <p>
-                全100ステージクリア！<br>
+                全30ステージクリア！<br>
                 あなたの削りスキルは最高です！<br><br>
                 隠れていた素敵な画像たちを<br>
                 全て見つけることができましたね。<br><br>
@@ -647,6 +648,7 @@
         const commentInput = document.getElementById('commentInput');
         const saveStageBtn = document.getElementById('saveStageBtn');
         const resetStageBtn = document.getElementById('resetStageBtn');
+        const resetFromCurrentBtn = document.getElementById('resetFromCurrentBtn');
         const customConfirm = document.getElementById('customConfirm');
         const confirmMessage = document.getElementById('confirmMessage');
         const confirmYes = document.getElementById('confirmYes');
@@ -672,29 +674,15 @@
         let scratchedCanvas = null; // 削った状態を保存するキャンバス
         let confirmCallback = null; // 確認ダイアログのコールバック
 
-        // デフォルトステージデータ（100ステージ）
+        // デフォルトステージデータ（30ステージ）
         function generateDefaultStages() {
             const colors = ['#FF6B6B', '#95E1D3', '#AA96DA', '#A8D8EA', '#FFD93D', '#F7B731', '#FF6348', '#A29BFE', '#55E6C1', '#26C6DA',
                            '#E74C3C', '#3498DB', '#9B59B6', '#1ABC9C', '#F39C12', '#2ECC71', '#E67E22', '#16A085', '#C0392B', '#8E44AD',
-                           '#FF5733', '#33FF57', '#3357FF', '#F333FF', '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845',
-                           '#FF6F91', '#FFC75F', '#845EC2', '#D65DB1', '#FF9671', '#FFC75F', '#F9F871', '#00C9A7', '#C34A36', '#4D908E',
-                           '#577590', '#43AA8B', '#90BE6D', '#F9C74F', '#F8961E', '#F3722C', '#F94144', '#277DA1', '#4D908E', '#F9844A',
-                           '#F9C74F', '#90BE6D', '#43AA8B', '#577590', '#277DA1', '#4ECDC4', '#FF6B6B', '#95E1D3', '#AA96DA', '#A8D8EA',
-                           '#FFD93D', '#F7B731', '#FF6348', '#A29BFE', '#55E6C1', '#26C6DA', '#E74C3C', '#3498DB', '#9B59B6', '#1ABC9C',
-                           '#F39C12', '#2ECC71', '#E67E22', '#16A085', '#C0392B', '#8E44AD', '#FF5733', '#33FF57', '#3357FF', '#F333FF',
-                           '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845', '#FF6F91', '#FFC75F', '#845EC2', '#D65DB1',
-                           '#FF9671', '#FFC75F', '#F9F871', '#00C9A7', '#C34A36', '#4D908E', '#577590', '#43AA8B', '#90BE6D', '#F9C74F'];
+                           '#FF5733', '#33FF57', '#3357FF', '#F333FF', '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845'];
 
             const emojis = ['🌸', '☀️', '🌙', '⭐', '🌈', '🎨', '🎵', '💎', '🏆', '🎁',
-                          '🎺', '🏻', '🌹', '🌷', '🏼', '🍀', '🌿', '🍄', '🌾', '🌴',
-                          '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍑', '🍒', '🍍',
-                          '⚽', '🏀', '⚾', '🎾', '🏐', '🏈', '🏉', '🎱', '🏏', '🏸',
-                          '🎯', '🎪', '🎭', '🎬', '🎤', '🎧', '🎼', '🎹', '🎺', '🏻',
-                          '🚗', '🚕', '🚙', '🚌', '🚎', '🏎', '🚓', '🚑', '🚒', '🚐',
-                          '✈️', '🚀', '🛼', '🚁', '🛠', '⛵', '🚤', '🛬', '⛴', '🚢',
-                          '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨', '🏩', '🏪',
-                          '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣', '💔', '❤️',
-                          '🌟', '✨', '💫', '🌠', '⚡', '🔥', '💧', '🌊', '🍂', '🍁'];
+                          '🌹', '🌷', '🍀', '🌿', '🍄', '🌾', '🌴', '🍎', '🍊', '🍋',
+                          '🍌', '🍉', '🍇', '🍓', '🍑', '🍒', '🍍', '⚽', '🏀', '🎯'];
 
             const comments = [
                 '桜が咲きました！\n春の訪れですね', '太陽が輝いています！\n素敵な一日になりそう', '月が美しいですね\n静かな夜です',
@@ -703,39 +691,17 @@
                 'プレゼントです！\nおめでとうございます！', '美しい花が咲いています\n素晴らしい景色ですね', '明るい光が差し込んでいます\n希望を感じます',
                 '新しい発見がありました！\nワクワクしますね', '素晴らしい景色です\n心が癒されます', '温かい気持ちになります\n幸せですね',
                 'ラッキーアイテムゲット！\n運気上昇中です', '新たな冒険の始まりです\n楽しみですね', 'すごい発見です！\n感動しました',
-                '美しい瞬間です\n大切にしたいですね', 'おめでとうございます！\n素晴らしい成果です',
-                'クリエイティブな発見！\nインスピレーション湧きます', '素敵な音色ですね\n心地よいリズムです', '輝く宝物を見つけました\n価値ある発見です',
-                '勝利の証です\n努力が実りました', '特別な贈り物ですね\nありがとうございます', '自然の美しさに\n感動しますね',
-                '穏やかな時間が流れます\nリラックスできます', 'ポジティブな気持ちに\nなれますね', '癒しの時間です\nゆっくりしましょう',
-                '前向きな気持ちになります\n頑張れそうです', '素晴らしい一日になりそう\nワクワクします', '新しい挑戦が始まります\n期待が膨らみます',
-                '美味しそうですね！\n食べたくなります', '爽やかな気分です\nリフレッシュできました', '甘い香りがします\n幸せな気持ちです',
-                'スポーツの楽しさを\n感じますね', 'アクティブに動きたく\nなりますね', 'エネルギッシュな気分\nになります',
-                'ゲーム感覚で楽しめます\n面白いですね', 'エンターテイメントの世界へ\nようこそ', '芸術的な美しさですね\n感性が磨かれます',
-                '音楽の力を感じます\n心が躍ります', '乗り物でどこへ行こう\nワクワクします', 'スピード感がありますね\nスリル満点です',
-                '旅立ちの時です\n新しい場所へ', '空を飛ぶ夢が叶います\n自由を感じます', '未来的なイメージですね\n想像が広がります',
-                '帰る場所があります\n安心感がありますね', '建物の美しさに\n目を奪われます', '都会的な雰囲気ですね\nモダンな感じです',
-                '愛が溢れています\n温かい気持ちです', 'ハートフルな瞬間\n大切にしたいですね', 'ロマンチックな雰囲気\n素敵ですね',
-                '輝きが増しています\nキラキラ光ります', '魔法のような瞬間\n不思議な気分です', '流れ星に願いを\n夢が叶いそうです',
-                'パワーアップしました\nエネルギーを感じます', '情熱的な気持ち\n燃え上がります', '清らかな水のように\n澄んだ気持ちです',
-                '大きな波が来ます\nダイナミックですね', '季節の移り変わり\n美しいですね', '自然の恵みに感謝\n豊かな気持ちです',
-                'ゴールまであと少し！\n頑張りましょう', '新たなステージへ\n進みましょう', 'あなたは輝いています\n素晴らしいです',
-                '達成感があります\n喜びを感じます', '幸運が訪れました\nツイています', 'ポジティブパワー全開\n元気が出ます',
-                '奇跡的な出会い\n運命を感じます', '心が温まります\n優しい気持ちです', 'インスピレーション\n湧き上がります',
-                '創造力が高まります\nアイデア満載です', 'チャンスが来ました\n掴み取りましょう', '楽しい時間です\n笑顔になれます',
-                'ハッピーな気分\n幸せいっぱいです', '素敵な出会いがあります\n嬉しいですね', 'ドリームが叶います\n夢のようです',
-                'ファンタスティック！\n素晴らしいです', 'ワンダフルな瞬間\n感動しました', 'エクセレント！\n最高です',
-                'パーフェクト！\n完璧ですね', 'アメージング！\n驚きました', 'ビューティフル！\n美しいです',
-                'グレート！\n素晴らしい', 'スーパー！\n凄いです', 'ブリリアント！\n輝いています',
-                'マジカル！\n魔法のようです', 'スペシャル！\n特別です', 'ユニーク！\n個性的ですね',
-                'ハーモニー！\n調和しています', 'ピースフル！\n平和です', 'ジョイフル！\n喜びに満ちています',
-                'チアフル！\n元気が出ます', 'ホープフル！\n希望があります', 'ブレス！\n祝福されています'
+                '美しい瞬間です\n大切にしたいですね', 'おめでとうございます！\n素晴らしい成果です', 'クリエイティブな発見！\nインスピレーション湧きます',
+                '素敵な音色ですね\n心地よいリズムです', '輝く宝物を見つけました\n価値ある発見です', '勝利の証です\n努力が実りました',
+                '特別な贈り物ですね\nありがとうございます', '自然の美しさに\n感動しますね', '穏やかな時間が流れます\nリラックスできます',
+                'ポジティブな気持ちに\nなれますね', '癒しの時間です\nゆっくりしましょう', '全ステージクリア！\nおめでとうございます！'
             ];
 
             const stages = [];
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 30; i++) {
                 stages.push({
                     topColor: colors[i],
-                    bottomColor: colors[(i + 50) % 100],
+                    bottomColor: colors[(i + 15) % 30],
                     topText: '？',
                     bottomText: emojis[i],
                     comment: comments[i],
@@ -787,10 +753,16 @@
             const saved = localStorage.getItem('scratchGameStages');
             if (saved) {
                 const loadedStages = JSON.parse(saved);
-                // 100ステージ未満の場合は100ステージに拡張
-                if (loadedStages.length < 100) {
-                    console.log(`ステージ数を${loadedStages.length}から100に拡張します`);
-                    while (loadedStages.length < 100) {
+                // 30ステージより多い場合は30に切り詰め
+                if (loadedStages.length > 30) {
+                    console.log(`ステージ数を${loadedStages.length}から30に削減します`);
+                    loadedStages.splice(30);
+                    localStorage.setItem('scratchGameStages', JSON.stringify(loadedStages));
+                }
+                // 30ステージ未満の場合は30ステージに拡張
+                if (loadedStages.length < 30) {
+                    console.log(`ステージ数を${loadedStages.length}から30に拡張します`);
+                    while (loadedStages.length < 30) {
                         const index = loadedStages.length;
                         loadedStages.push(JSON.parse(JSON.stringify(defaultStages[index])));
                     }
@@ -1399,6 +1371,35 @@
             }
         });
 
+        // このステージ以降をリセット
+        resetFromCurrentBtn.addEventListener('click', async () => {
+            const stageCount = stages.length - currentEditStage;
+            const confirmed = await showConfirm(
+                `ステージ${currentEditStage + 1}以降（${stageCount}ステージ）をデフォルトに戻しますか？\n\n` +
+                `※ カスタム画像は全て削除され、初期状態に戻ります`
+            );
+            if (confirmed) {
+                // 現在のステージ以降を全てリセット
+                for (let i = currentEditStage; i < stages.length; i++) {
+                    stages[i] = JSON.parse(JSON.stringify(defaultStages[i]));
+                }
+                try {
+                    saveStages();
+                    const currentSize = Math.round(getStorageSize() / 1024);
+                    const availableSize = Math.round(getAvailableStorage() / 1024);
+                    alert(
+                        `ステージ${currentEditStage + 1}以降をリセットしました！\n\n` +
+                        `リセットしたステージ数: ${stageCount}\n\n` +
+                        `現在の使用容量: ${currentSize}KB\n` +
+                        `残り容量: ${availableSize}KB`
+                    );
+                    loadEditStage(currentEditStage);
+                } catch (e) {
+                    alert('リセットに失敗しました: ' + e.message);
+                }
+            }
+        });
+
         // データエクスポート
         exportDataBtn.addEventListener('click', () => {
             try {
@@ -1445,8 +1446,8 @@
                     throw new Error('無効なデータ形式です');
                 }
 
-                if (importedData.stages.length !== 100) {
-                    throw new Error('ステージ数が正しくありません（100ステージ必要です）');
+                if (importedData.stages.length !== 30) {
+                    throw new Error('ステージ数が正しくありません（30ステージ必要です）');
                 }
 
                 // 各ステージのデータ構造を検証
