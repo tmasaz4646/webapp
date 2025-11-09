@@ -154,6 +154,12 @@
             background: #f9f9f9;
         }
 
+        .upload-box.drag-over {
+            border-color: #667eea;
+            background: #e8eaf6;
+            transform: scale(1.02);
+        }
+
         .upload-box h3 {
             margin-bottom: 10px;
             color: #333;
@@ -528,17 +534,17 @@
             <div class="stage-selector" id="stageSelector"></div>
             
             <div class="image-upload-area">
-                <div class="upload-box" onclick="document.getElementById('topImageUpload').click()">
+                <div class="upload-box" id="topUploadBox" onclick="document.getElementById('topImageUpload').click()">
                     <h3>上の画像（削る画像）</h3>
-                    <p>クリックして画像を選択</p>
-                    <input type="file" id="topImageUpload" accept="image/*">
+                    <p>クリックまたはドラッグ&ドロップ<br>複数画像の一括登録可能</p>
+                    <input type="file" id="topImageUpload" accept="image/*" multiple>
                     <img id="topPreview" class="upload-preview" style="display: none;">
                 </div>
-                
-                <div class="upload-box" onclick="document.getElementById('bottomImageUpload').click()">
+
+                <div class="upload-box" id="bottomUploadBox" onclick="document.getElementById('bottomImageUpload').click()">
                     <h3>下の画像（見せたい画像）</h3>
-                    <p>クリックして画像を選択</p>
-                    <input type="file" id="bottomImageUpload" accept="image/*">
+                    <p>クリックまたはドラッグ&ドロップ<br>複数画像の一括登録可能</p>
+                    <input type="file" id="bottomImageUpload" accept="image/*" multiple>
                     <img id="bottomPreview" class="upload-preview" style="display: none;">
                 </div>
             </div>
@@ -641,6 +647,8 @@
         const importDataBtn = document.getElementById('importDataBtn');
         const importFileInput = document.getElementById('importFileInput');
         const playStageSelector = document.getElementById('playStageSelector');
+        const topUploadBox = document.getElementById('topUploadBox');
+        const bottomUploadBox = document.getElementById('bottomUploadBox');
 
         let currentStage = 0;
         let currentEditStage = 0;
@@ -915,32 +923,184 @@
             }
         }
 
-        // 画像アップロード
+        // 複数ファイルを作成日順にソート
+        function sortFilesByDate(files) {
+            return Array.from(files).sort((a, b) => a.lastModified - b.lastModified);
+        }
+
+        // 複数画像を一括処理
+        async function handleMultipleImages(files, imageType) {
+            if (files.length === 0) return;
+
+            const sortedFiles = sortFilesByDate(files);
+            const confirmed = await showConfirm(
+                `${sortedFiles.length}個の画像を作成日順に一括登録します。\n` +
+                `ステージ${currentEditStage + 1}から順に${imageType}画像として登録されます。\nよろしいですか？`
+            );
+
+            if (!confirmed) return;
+
+            let processedCount = 0;
+            let failedCount = 0;
+
+            for (let i = 0; i < sortedFiles.length; i++) {
+                const targetStage = currentEditStage + i;
+                if (targetStage >= stages.length) {
+                    alert(`ステージ${targetStage + 1}は存在しないため、${sortedFiles.length - i}個の画像をスキップしました。`);
+                    break;
+                }
+
+                try {
+                    const file = sortedFiles[i];
+                    const reader = new FileReader();
+                    const imageData = await new Promise((resolve, reject) => {
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+
+                    const compressed = await compressImage(imageData);
+
+                    if (imageType === '削る') {
+                        stages[targetStage].topImage = compressed;
+                    } else {
+                        stages[targetStage].bottomImage = compressed;
+                    }
+
+                    processedCount++;
+                } catch (error) {
+                    console.error(`画像 ${i + 1} の処理に失敗:`, error);
+                    failedCount++;
+                }
+            }
+
+            // データを保存
+            try {
+                saveStages();
+                alert(
+                    `一括登録が完了しました！\n` +
+                    `成功: ${processedCount}個\n` +
+                    (failedCount > 0 ? `失敗: ${failedCount}個\n` : '') +
+                    `ステージ${currentEditStage + 1}〜${currentEditStage + processedCount}に登録されました。`
+                );
+                loadEditStage(currentEditStage);
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    alert('保存容量を超えています。画像サイズが大きすぎる可能性があります。');
+                } else {
+                    alert('保存に失敗しました: ' + e.message);
+                }
+            }
+        }
+
+        // 画像アップロード（単一・複数対応）
         topImageUpload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            if (files.length === 1) {
+                // 単一ファイルの場合は従来通り現在のステージに設定
                 const reader = new FileReader();
                 reader.onload = async (event) => {
                     const compressed = await compressImage(event.target.result);
                     topPreview.src = compressed;
                     topPreview.style.display = 'block';
                 };
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(files[0]);
+            } else {
+                // 複数ファイルの場合は一括処理
+                await handleMultipleImages(files, '削る');
             }
         });
 
         bottomImageUpload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            if (files.length === 1) {
+                // 単一ファイルの場合は従来通り現在のステージに設定
                 const reader = new FileReader();
                 reader.onload = async (event) => {
                     const compressed = await compressImage(event.target.result);
                     bottomPreview.src = compressed;
                     bottomPreview.style.display = 'block';
                 };
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(files[0]);
+            } else {
+                // 複数ファイルの場合は一括処理
+                await handleMultipleImages(files, '見せたい');
             }
         });
+
+        // ドラッグアンドドロップ機能
+        function setupDragAndDrop(uploadBox, fileInput, imageType) {
+            // ドラッグエンター
+            uploadBox.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadBox.classList.add('drag-over');
+            });
+
+            // ドラッグオーバー
+            uploadBox.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadBox.classList.add('drag-over');
+            });
+
+            // ドラッグリーブ
+            uploadBox.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // 子要素からのイベントを無視
+                if (e.target === uploadBox) {
+                    uploadBox.classList.remove('drag-over');
+                }
+            });
+
+            // ドロップ
+            uploadBox.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadBox.classList.remove('drag-over');
+
+                const files = e.dataTransfer.files;
+                if (!files || files.length === 0) return;
+
+                // 画像ファイルのみをフィルタ
+                const imageFiles = Array.from(files).filter(file =>
+                    file.type.startsWith('image/')
+                );
+
+                if (imageFiles.length === 0) {
+                    alert('画像ファイルを選択してください。');
+                    return;
+                }
+
+                if (imageFiles.length === 1) {
+                    // 単一ファイルの場合は現在のステージに設定
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        const compressed = await compressImage(event.target.result);
+                        if (imageType === '削る') {
+                            topPreview.src = compressed;
+                            topPreview.style.display = 'block';
+                        } else {
+                            bottomPreview.src = compressed;
+                            bottomPreview.style.display = 'block';
+                        }
+                    };
+                    reader.readAsDataURL(imageFiles[0]);
+                } else {
+                    // 複数ファイルの場合は一括処理
+                    await handleMultipleImages(imageFiles, imageType);
+                }
+            });
+        }
+
+        // ドラッグアンドドロップを両方のアップロードボックスに設定
+        setupDragAndDrop(topUploadBox, topImageUpload, '削る');
+        setupDragAndDrop(bottomUploadBox, bottomImageUpload, '見せたい');
 
         // ステージ保存
         saveStageBtn.addEventListener('click', () => {
