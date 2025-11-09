@@ -517,7 +517,7 @@
         </div>
         
         <div class="stage-info">
-            <span id="stageNumber">ステージ 1 / 30</span>
+            <span id="stageNumber">ステージ 1 / 35</span>
         </div>
 
         <div class="play-stage-selector" id="playStageSelector"></div>
@@ -600,7 +600,7 @@
         <div class="ending-screen" id="endingScreen">
             <h2>🎉 おめでとうございます！ 🎉</h2>
             <p>
-                全30ステージクリア！<br>
+                全35ステージクリア！<br>
                 あなたの削りスキルは最高です！<br><br>
                 隠れていた素敵な画像たちを<br>
                 全て見つけることができましたね。<br><br>
@@ -674,15 +674,17 @@
         let scratchedCanvas = null; // 削った状態を保存するキャンバス
         let confirmCallback = null; // 確認ダイアログのコールバック
 
-        // デフォルトステージデータ（30ステージ）
+        // デフォルトステージデータ（35ステージ）
         function generateDefaultStages() {
             const colors = ['#FF6B6B', '#95E1D3', '#AA96DA', '#A8D8EA', '#FFD93D', '#F7B731', '#FF6348', '#A29BFE', '#55E6C1', '#26C6DA',
                            '#E74C3C', '#3498DB', '#9B59B6', '#1ABC9C', '#F39C12', '#2ECC71', '#E67E22', '#16A085', '#C0392B', '#8E44AD',
-                           '#FF5733', '#33FF57', '#3357FF', '#F333FF', '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845'];
+                           '#FF5733', '#33FF57', '#3357FF', '#F333FF', '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845',
+                           '#FF6F91', '#FFC75F', '#845EC2', '#D65DB1', '#FF9671'];
 
             const emojis = ['🌸', '☀️', '🌙', '⭐', '🌈', '🎨', '🎵', '💎', '🏆', '🎁',
                           '🌹', '🌷', '🍀', '🌿', '🍄', '🌾', '🌴', '🍎', '🍊', '🍋',
-                          '🍌', '🍉', '🍇', '🍓', '🍑', '🍒', '🍍', '⚽', '🏀', '🎯'];
+                          '🍌', '🍉', '🍇', '🍓', '🍑', '🍒', '🍍', '⚽', '🏀', '🎯',
+                          '🎪', '🎭', '🎬', '🎤', '🎧'];
 
             const comments = [
                 '桜が咲きました！\n春の訪れですね', '太陽が輝いています！\n素敵な一日になりそう', '月が美しいですね\n静かな夜です',
@@ -694,14 +696,16 @@
                 '美しい瞬間です\n大切にしたいですね', 'おめでとうございます！\n素晴らしい成果です', 'クリエイティブな発見！\nインスピレーション湧きます',
                 '素敵な音色ですね\n心地よいリズムです', '輝く宝物を見つけました\n価値ある発見です', '勝利の証です\n努力が実りました',
                 '特別な贈り物ですね\nありがとうございます', '自然の美しさに\n感動しますね', '穏やかな時間が流れます\nリラックスできます',
-                'ポジティブな気持ちに\nなれますね', '癒しの時間です\nゆっくりしましょう', '全ステージクリア！\nおめでとうございます！'
+                'ポジティブな気持ちに\nなれますね', '癒しの時間です\nゆっくりしましょう', '前向きな気持ちになります\n頑張れそうです',
+                'エンターテイメントの世界へ\nようこそ', '芸術的な美しさですね\n感性が磨かれます', '音楽の力を感じます\n心が躍ります',
+                '全ステージクリア！\n最高です！', '全てをやり遂げました！\nおめでとうございます！'
             ];
 
             const stages = [];
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < 35; i++) {
                 stages.push({
                     topColor: colors[i],
-                    bottomColor: colors[(i + 15) % 30],
+                    bottomColor: colors[(i + 17) % 35],
                     topText: '？',
                     bottomText: emojis[i],
                     comment: comments[i],
@@ -753,16 +757,16 @@
             const saved = localStorage.getItem('scratchGameStages');
             if (saved) {
                 const loadedStages = JSON.parse(saved);
-                // 30ステージより多い場合は30に切り詰め
-                if (loadedStages.length > 30) {
-                    console.log(`ステージ数を${loadedStages.length}から30に削減します`);
-                    loadedStages.splice(30);
+                // 35ステージより多い場合は35に切り詰め
+                if (loadedStages.length > 35) {
+                    console.log(`ステージ数を${loadedStages.length}から35に削減します`);
+                    loadedStages.splice(35);
                     localStorage.setItem('scratchGameStages', JSON.stringify(loadedStages));
                 }
-                // 30ステージ未満の場合は30ステージに拡張
-                if (loadedStages.length < 30) {
-                    console.log(`ステージ数を${loadedStages.length}から30に拡張します`);
-                    while (loadedStages.length < 30) {
+                // 35ステージ未満の場合は35ステージに拡張
+                if (loadedStages.length < 35) {
+                    console.log(`ステージ数を${loadedStages.length}から35に拡張します`);
+                    while (loadedStages.length < 35) {
                         const index = loadedStages.length;
                         loadedStages.push(JSON.parse(JSON.stringify(defaultStages[index])));
                     }
@@ -1446,8 +1450,8 @@
                     throw new Error('無効なデータ形式です');
                 }
 
-                if (importedData.stages.length !== 30) {
-                    throw new Error('ステージ数が正しくありません（30ステージ必要です）');
+                if (importedData.stages.length !== 35) {
+                    throw new Error('ステージ数が正しくありません（35ステージ必要です）');
                 }
 
                 // 各ステージのデータ構造を検証
