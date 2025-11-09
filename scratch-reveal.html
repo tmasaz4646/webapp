@@ -475,11 +475,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>$D83C$DFA8 画像スクラッチゲーム</h1>
+        <h1>🎨 画像スクラッチゲーム</h1>
         
         <div class="mode-selector">
-            <button class="mode-btn active" id="playModeBtn">$D83C$DFAE プレイモード</button>
-            <button class="mode-btn" id="editModeBtn">$270F$FE0F 編集モード</button>
+            <button class="mode-btn active" id="playModeBtn">🎮 プレイモード</button>
+            <button class="mode-btn" id="editModeBtn">✏️ 編集モード</button>
         </div>
         
         <div class="stage-info">
@@ -522,7 +522,7 @@
             <button class="save-btn" id="resetStageBtn" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">このステージをリセット</button>
             
             <div class="info">
-                $D83D$DCA1 各ステージの画像とコメントを設定できます
+                💡 各ステージの画像とコメントを設定できます
             </div>
         </div>
 
@@ -541,12 +541,12 @@
             <div class="progress-text" id="progressText">削った割合: 0%</div>
 
             <div class="info">
-                $D83D$DCA1 60%削るとメッセージが表示され、次に進めます（そのまま削り続けることも可能）
+                💡 60%削るとメッセージが表示され、次に進めます（そのまま削り続けることも可能）
             </div>
         </div>
 
         <div class="ending-screen" id="endingScreen">
-            <h2>$D83C$DF89 おめでとうございます！ $D83C$DF89</h2>
+            <h2>🎉 おめでとうございます！ 🎉</h2>
             <p>
                 全10ステージクリア！<br>
                 あなたの削りスキルは最高です！<br><br>
@@ -614,16 +614,16 @@
 
         // デフォルトステージデータ
         const defaultStages = [
-            { topColor: '#FF6B6B', bottomColor: '#4ECDC4', topText: '？', bottomText: '$D83C$DF38', comment: '桜が咲きました！\n春の訪れですね', topImage: null, bottomImage: null },
-            { topColor: '#95E1D3', bottomColor: '#F38181', topText: '？', bottomText: '$2600$FE0F', comment: '太陽が輝いています！\n素敵な一日になりそう', topImage: null, bottomImage: null },
-            { topColor: '#AA96DA', bottomColor: '#FCBAD3', topText: '？', bottomText: '$D83C$DF19', comment: '月が美しいですね\n静かな夜です', topImage: null, bottomImage: null },
-            { topColor: '#A8D8EA', bottomColor: '#FFAAA7', topText: '？', bottomText: '$2B50', comment: '星が見えました！\nキラキラしています', topImage: null, bottomImage: null },
-            { topColor: '#FFD93D', bottomColor: '#6BCB77', topText: '？', bottomText: '$D83C$DF08', comment: '虹が出ました！\n幸運の予感です', topImage: null, bottomImage: null },
-            { topColor: '#F7B731', bottomColor: '#5352ED', topText: '？', bottomText: '$D83C$DFA8', comment: 'アートの世界へ\nようこそ！', topImage: null, bottomImage: null },
-            { topColor: '#FF6348', bottomColor: '#2ECC71', topText: '？', bottomText: '$D83C$DFB5', comment: '音楽が聞こえます\nリズムに乗って', topImage: null, bottomImage: null },
-            { topColor: '#A29BFE', bottomColor: '#FD79A8', topText: '？', bottomText: '$D83D$DC8E', comment: 'ダイヤモンド発見！\nとても貴重です', topImage: null, bottomImage: null },
-            { topColor: '#55E6C1', bottomColor: '#FFA502', topText: '？', bottomText: '$D83C$DFC6', comment: 'トロフィーゲット！\nあなたは素晴らしい', topImage: null, bottomImage: null },
-            { topColor: '#26C6DA', bottomColor: '#FFA726', topText: '？', bottomText: '$D83C$DF81', comment: 'プレゼントです！\nおめでとうございます！', topImage: null, bottomImage: null }
+            { topColor: '#FF6B6B', bottomColor: '#4ECDC4', topText: '？', bottomText: '🌸', comment: '桜が咲きました！\n春の訪れですね', topImage: null, bottomImage: null },
+            { topColor: '#95E1D3', bottomColor: '#F38181', topText: '？', bottomText: '☀️', comment: '太陽が輝いています！\n素敵な一日になりそう', topImage: null, bottomImage: null },
+            { topColor: '#AA96DA', bottomColor: '#FCBAD3', topText: '？', bottomText: '🌙', comment: '月が美しいですね\n静かな夜です', topImage: null, bottomImage: null },
+            { topColor: '#A8D8EA', bottomColor: '#FFAAA7', topText: '？', bottomText: '⭐', comment: '星が見えました！\nキラキラしています', topImage: null, bottomImage: null },
+            { topColor: '#FFD93D', bottomColor: '#6BCB77', topText: '？', bottomText: '🌈', comment: '虹が出ました！\n幸運の予感です', topImage: null, bottomImage: null },
+            { topColor: '#F7B731', bottomColor: '#5352ED', topText: '？', bottomText: '🎨', comment: 'アートの世界へ\nようこそ！', topImage: null, bottomImage: null },
+            { topColor: '#FF6348', bottomColor: '#2ECC71', topText: '？', bottomText: '🎵', comment: '音楽が聞こえます\nリズムに乗って', topImage: null, bottomImage: null },
+            { topColor: '#A29BFE', bottomColor: '#FD79A8', topText: '？', bottomText: '💎', comment: 'ダイヤモンド発見！\nとても貴重です', topImage: null, bottomImage: null },
+            { topColor: '#55E6C1', bottomColor: '#FFA502', topText: '？', bottomText: '🏆', comment: 'トロフィーゲット！\nあなたは素晴らしい', topImage: null, bottomImage: null },
+            { topColor: '#26C6DA', bottomColor: '#FFA726', topText: '？', bottomText: '🎁', comment: 'プレゼントです！\nおめでとうございます！', topImage: null, bottomImage: null }
         ];
 
         // ステージデータ（LocalStorageから読み込み、なければデフォルト）
