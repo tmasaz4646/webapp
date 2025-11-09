@@ -807,28 +807,46 @@
             localStorage.setItem('scratchGameStages', JSON.stringify(stages));
         }
 
+        // LocalStorageの使用容量をチェックする関数
+        function getStorageSize() {
+            let total = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    total += localStorage[key].length + key.length;
+                }
+            }
+            return total;
+        }
+
+        // LocalStorageの推定残容量をチェック（単位：バイト）
+        function getAvailableStorage() {
+            const maxSize = 5 * 1024 * 1024; // 5MB（多くのブラウザのデフォルト）
+            const currentSize = getStorageSize();
+            return maxSize - currentSize;
+        }
+
         // 画像を圧縮する関数
-        function compressImage(imageDataUrl, maxWidth = 800, quality = 0.7) {
+        function compressImage(imageDataUrl, maxWidth = 600, quality = 0.5) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-                    
+
                     // 最大幅を超える場合はリサイズ
                     if (width > maxWidth) {
                         height = (height * maxWidth) / width;
                         width = maxWidth;
                     }
-                    
+
                     canvas.width = width;
                     canvas.height = height;
-                    
+
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // JPEG形式で圧縮（品質0.7）
+
+                    // JPEG形式で圧縮（品質0.5で容量節約）
                     resolve(canvas.toDataURL('image/jpeg', quality));
                 };
                 img.src = imageDataUrl;
@@ -943,9 +961,28 @@
             if (files.length === 0) return;
 
             const sortedFiles = sortFilesByDate(files);
+
+            // 容量チェック: 1枚あたり約50KB（圧縮後）として概算
+            const estimatedSizePerImage = 50 * 1024; // 50KB
+            const estimatedTotalSize = sortedFiles.length * estimatedSizePerImage;
+            const availableStorage = getAvailableStorage();
+
+            if (estimatedTotalSize > availableStorage) {
+                alert(
+                    `⚠️ 容量不足の可能性があります\n\n` +
+                    `登録しようとする画像数: ${sortedFiles.length}枚\n` +
+                    `推定必要容量: ${Math.round(estimatedTotalSize / 1024)}KB\n` +
+                    `利用可能容量: ${Math.round(availableStorage / 1024)}KB\n\n` +
+                    `画像数を減らすか、既存のステージ画像を削除してください。`
+                );
+                return;
+            }
+
             const confirmed = await showConfirm(
                 `${sortedFiles.length}個の画像を作成日順に一括登録します。\n` +
-                `ステージ${currentEditStage + 1}から順に${imageType}画像として登録されます。\nよろしいですか？`
+                `ステージ${currentEditStage + 1}から順に${imageType}画像として登録されます。\n` +
+                `推定容量: ${Math.round(estimatedTotalSize / 1024)}KB\n` +
+                `よろしいですか？`
             );
 
             if (!confirmed) return;
@@ -987,16 +1024,30 @@
             // データを保存
             try {
                 saveStages();
+                const currentSize = Math.round(getStorageSize() / 1024);
+                const availableSize = Math.round(getAvailableStorage() / 1024);
                 alert(
                     `一括登録が完了しました！\n` +
                     `成功: ${processedCount}個\n` +
                     (failedCount > 0 ? `失敗: ${failedCount}個\n` : '') +
-                    `ステージ${currentEditStage + 1}〜${currentEditStage + processedCount}に登録されました。`
+                    `ステージ${currentEditStage + 1}〜${currentEditStage + processedCount}に登録されました。\n\n` +
+                    `現在の使用容量: ${currentSize}KB\n` +
+                    `残り容量: ${availableSize}KB`
                 );
                 loadEditStage(currentEditStage);
             } catch (e) {
                 if (e.name === 'QuotaExceededError') {
-                    alert('保存容量を超えています。画像サイズが大きすぎる可能性があります。');
+                    const currentSize = Math.round(getStorageSize() / 1024);
+                    alert(
+                        `❌ 保存容量を超えました\n\n` +
+                        `現在の使用容量: ${currentSize}KB\n` +
+                        `処理済み: ${processedCount}枚\n\n` +
+                        `対策:\n` +
+                        `・登録する画像数を減らす\n` +
+                        `・既存のステージ画像を削除する\n` +
+                        `・データをエクスポートしてバックアップ後、\n` +
+                        `  不要なステージをリセットする`
+                    );
                 } else {
                     alert('保存に失敗しました: ' + e.message);
                 }
@@ -1011,10 +1062,27 @@
             const pairCount = Math.floor(sortedFiles.length / 2);
             const remainingFiles = sortedFiles.length % 2;
 
+            // 容量チェック: ペア（2枚）あたり約100KB（圧縮後）として概算
+            const estimatedSizePerPair = 100 * 1024; // 100KB
+            const estimatedTotalSize = pairCount * estimatedSizePerPair;
+            const availableStorage = getAvailableStorage();
+
+            if (estimatedTotalSize > availableStorage) {
+                alert(
+                    `⚠️ 容量不足の可能性があります\n\n` +
+                    `登録しようとするペア数: ${pairCount}組（${pairCount * 2}枚）\n` +
+                    `推定必要容量: ${Math.round(estimatedTotalSize / 1024)}KB\n` +
+                    `利用可能容量: ${Math.round(availableStorage / 1024)}KB\n\n` +
+                    `画像数を減らすか、既存のステージ画像を削除してください。`
+                );
+                return;
+            }
+
             const confirmed = await showConfirm(
                 `${sortedFiles.length}個の画像を作成日順にペアで一括登録します。\n` +
                 `${pairCount}組のペア（${pairCount * 2}枚）がステージ${currentEditStage + 1}から登録されます。\n` +
                 (remainingFiles > 0 ? `※ 残り${remainingFiles}枚は登録されません\n` : '') +
+                `推定容量: ${Math.round(estimatedTotalSize / 1024)}KB\n` +
                 `よろしいですか？`
             );
 
@@ -1065,17 +1133,31 @@
             // データを保存
             try {
                 saveStages();
+                const currentSize = Math.round(getStorageSize() / 1024);
+                const availableSize = Math.round(getAvailableStorage() / 1024);
                 alert(
                     `ペア一括登録が完了しました！\n` +
                     `登録ペア数: ${processedPairs}組（${processedPairs * 2}枚）\n` +
                     (failedCount > 0 ? `失敗: ${failedCount}組\n` : '') +
                     (remainingFiles > 0 ? `未登録: ${remainingFiles}枚\n` : '') +
-                    `ステージ${currentEditStage + 1}〜${currentEditStage + processedPairs}に登録されました。`
+                    `ステージ${currentEditStage + 1}〜${currentEditStage + processedPairs}に登録されました。\n\n` +
+                    `現在の使用容量: ${currentSize}KB\n` +
+                    `残り容量: ${availableSize}KB`
                 );
                 loadEditStage(currentEditStage);
             } catch (e) {
                 if (e.name === 'QuotaExceededError') {
-                    alert('保存容量を超えています。画像サイズが大きすぎる可能性があります。');
+                    const currentSize = Math.round(getStorageSize() / 1024);
+                    alert(
+                        `❌ 保存容量を超えました\n\n` +
+                        `現在の使用容量: ${currentSize}KB\n` +
+                        `処理済み: ${processedPairs}組（${processedPairs * 2}枚）\n\n` +
+                        `対策:\n` +
+                        `・登録する画像数を減らす\n` +
+                        `・既存のステージ画像を削除する\n` +
+                        `・データをエクスポートしてバックアップ後、\n` +
+                        `  不要なステージをリセットする`
+                    );
                 } else {
                     alert('保存に失敗しました: ' + e.message);
                 }
@@ -1270,21 +1352,36 @@
         saveStageBtn.addEventListener('click', () => {
             const stage = stages[currentEditStage];
             stage.comment = commentInput.value;
-            
+
             if (topPreview.style.display !== 'none') {
                 stage.topImage = topPreview.src;
             }
-            
+
             if (bottomPreview.style.display !== 'none') {
                 stage.bottomImage = bottomPreview.src;
             }
-            
+
             try {
                 saveStages();
-                alert('ステージを保存しました！');
+                const currentSize = Math.round(getStorageSize() / 1024);
+                const availableSize = Math.round(getAvailableStorage() / 1024);
+                alert(
+                    `ステージを保存しました！\n\n` +
+                    `現在の使用容量: ${currentSize}KB\n` +
+                    `残り容量: ${availableSize}KB`
+                );
             } catch (e) {
                 if (e.name === 'QuotaExceededError') {
-                    alert('保存容量を超えています。画像サイズが大きすぎる可能性があります。より小さい画像を使用してください。');
+                    const currentSize = Math.round(getStorageSize() / 1024);
+                    alert(
+                        `❌ 保存容量を超えました\n\n` +
+                        `現在の使用容量: ${currentSize}KB\n\n` +
+                        `対策:\n` +
+                        `・より小さい画像を使用する\n` +
+                        `・既存のステージ画像を削除する\n` +
+                        `・データをエクスポートしてバックアップ後、\n` +
+                        `  不要なステージをリセットする`
+                    );
                 } else {
                     alert('保存に失敗しました: ' + e.message);
                 }
