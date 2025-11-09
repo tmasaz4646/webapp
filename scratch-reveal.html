@@ -311,7 +311,11 @@
             display: block;
             max-width: 100%;
             height: auto;
-            cursor: crosshair;
+            cursor: grab;
+        }
+
+        canvas.scratching {
+            cursor: grabbing;
         }
 
         .info {
@@ -1594,6 +1598,7 @@
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
             isDrawing = true;
+            canvas.classList.add('scratching');
             lastX = x;
             lastY = y;
             scratch(x, y);
@@ -1613,6 +1618,7 @@
 
         function startDrawing(e) {
             isDrawing = true;
+            canvas.classList.add('scratching');
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -1638,6 +1644,7 @@
         function stopDrawing() {
             if (isDrawing) {
                 isDrawing = false;
+                canvas.classList.remove('scratching');
                 updateProgress();
             }
         }
