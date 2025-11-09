@@ -520,9 +520,16 @@
 
             <button class="save-btn" id="saveStageBtn">このステージを保存</button>
             <button class="save-btn" id="resetStageBtn" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">このステージをリセット</button>
-            
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                <button class="save-btn" id="exportDataBtn" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">$D83D$DCBE データをエクスポート</button>
+                <button class="save-btn" id="importDataBtn" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">$D83D$DCBE データをインポート</button>
+            </div>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+
             <div class="info">
-                $D83D$DCA1 各ステージの画像とコメントを設定できます
+                $D83D$DCA1 各ステージの画像とコメントを設定できます<br>
+                $D83D$DCBE エクスポート/インポートで全ステージのデータをバックアップ・復元できます
             </div>
         </div>
 
@@ -599,6 +606,9 @@
         const confirmMessage = document.getElementById('confirmMessage');
         const confirmYes = document.getElementById('confirmYes');
         const confirmNo = document.getElementById('confirmNo');
+        const exportDataBtn = document.getElementById('exportDataBtn');
+        const importDataBtn = document.getElementById('importDataBtn');
+        const importFileInput = document.getElementById('importFileInput');
 
         let currentStage = 0;
         let currentEditStage = 0;
@@ -832,6 +842,83 @@
                 loadEditStage(currentEditStage);
                 alert('ステージをリセットしました！');
             }
+        });
+
+        // データエクスポート
+        exportDataBtn.addEventListener('click', () => {
+            try {
+                const dataToExport = {
+                    version: '1.0',
+                    exportDate: new Date().toISOString(),
+                    stages: stages
+                };
+
+                const jsonString = JSON.stringify(dataToExport, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const filename = `scratch-game-data-${new Date().toISOString().split('T')[0]}.json`;
+
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                alert('データをエクスポートしました！');
+            } catch (e) {
+                alert('エクスポートに失敗しました: ' + e.message);
+            }
+        });
+
+        // データインポート
+        importDataBtn.addEventListener('click', () => {
+            importFileInput.click();
+        });
+
+        importFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const importedData = JSON.parse(text);
+
+                // データ検証
+                if (!importedData.stages || !Array.isArray(importedData.stages)) {
+                    throw new Error('無効なデータ形式です');
+                }
+
+                if (importedData.stages.length !== 10) {
+                    throw new Error('ステージ数が正しくありません（10ステージ必要です）');
+                }
+
+                // 各ステージのデータ構造を検証
+                for (let i = 0; i < importedData.stages.length; i++) {
+                    const stage = importedData.stages[i];
+                    if (!stage.hasOwnProperty('topColor') ||
+                        !stage.hasOwnProperty('bottomColor') ||
+                        !stage.hasOwnProperty('topText') ||
+                        !stage.hasOwnProperty('bottomText') ||
+                        !stage.hasOwnProperty('comment')) {
+                        throw new Error(`ステージ${i + 1}のデータが不完全です`);
+                    }
+                }
+
+                const confirmed = await showConfirm('データをインポートすると現在のデータが上書きされます。よろしいですか？');
+                if (confirmed) {
+                    stages = importedData.stages;
+                    saveStages();
+                    loadEditStage(currentEditStage);
+                    alert('データをインポートしました！');
+                }
+            } catch (e) {
+                alert('インポートに失敗しました: ' + e.message);
+            }
+
+            // ファイル入力をリセット
+            importFileInput.value = '';
         });
 
         // 画像を生成する関数
