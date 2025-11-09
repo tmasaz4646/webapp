@@ -39,6 +39,34 @@
             color: #667eea;
         }
 
+        .play-stage-selector {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+
+        .play-stage-selector .stage-btn {
+            margin: 3px;
+        }
+
+        .play-stage-selector::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .play-stage-selector::-webkit-scrollbar-track {
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .play-stage-selector::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
         .mode-selector {
             display: flex;
             gap: 10px;
@@ -483,8 +511,10 @@
         </div>
         
         <div class="stage-info">
-            <span id="stageNumber">ステージ 1 / 10</span>
+            <span id="stageNumber">ステージ 1 / 100</span>
         </div>
+
+        <div class="play-stage-selector" id="playStageSelector"></div>
 
         <div class="brush-controls">
             <label>ブラシサイズ:</label>
@@ -555,10 +585,11 @@
         <div class="ending-screen" id="endingScreen">
             <h2>$D83C$DF89 おめでとうございます！ $D83C$DF89</h2>
             <p>
-                全10ステージクリア！<br>
+                全100ステージクリア！<br>
                 あなたの削りスキルは最高です！<br><br>
                 隠れていた素敵な画像たちを<br>
                 全て見つけることができましたね。<br><br>
+                本当に素晴らしい！<br>
                 ありがとうございました！
             </p>
             <button class="replay-btn" id="replayBtn">もう一度プレイ</button>
@@ -609,6 +640,7 @@
         const exportDataBtn = document.getElementById('exportDataBtn');
         const importDataBtn = document.getElementById('importDataBtn');
         const importFileInput = document.getElementById('importFileInput');
+        const playStageSelector = document.getElementById('playStageSelector');
 
         let currentStage = 0;
         let currentEditStage = 0;
@@ -622,19 +654,81 @@
         let scratchedCanvas = null; // 削った状態を保存するキャンバス
         let confirmCallback = null; // 確認ダイアログのコールバック
 
-        // デフォルトステージデータ
-        const defaultStages = [
-            { topColor: '#FF6B6B', bottomColor: '#4ECDC4', topText: '？', bottomText: '$D83C$DF38', comment: '桜が咲きました！\n春の訪れですね', topImage: null, bottomImage: null },
-            { topColor: '#95E1D3', bottomColor: '#F38181', topText: '？', bottomText: '$2600$FE0F', comment: '太陽が輝いています！\n素敵な一日になりそう', topImage: null, bottomImage: null },
-            { topColor: '#AA96DA', bottomColor: '#FCBAD3', topText: '？', bottomText: '$D83C$DF19', comment: '月が美しいですね\n静かな夜です', topImage: null, bottomImage: null },
-            { topColor: '#A8D8EA', bottomColor: '#FFAAA7', topText: '？', bottomText: '$2B50', comment: '星が見えました！\nキラキラしています', topImage: null, bottomImage: null },
-            { topColor: '#FFD93D', bottomColor: '#6BCB77', topText: '？', bottomText: '$D83C$DF08', comment: '虹が出ました！\n幸運の予感です', topImage: null, bottomImage: null },
-            { topColor: '#F7B731', bottomColor: '#5352ED', topText: '？', bottomText: '$D83C$DFA8', comment: 'アートの世界へ\nようこそ！', topImage: null, bottomImage: null },
-            { topColor: '#FF6348', bottomColor: '#2ECC71', topText: '？', bottomText: '$D83C$DFB5', comment: '音楽が聞こえます\nリズムに乗って', topImage: null, bottomImage: null },
-            { topColor: '#A29BFE', bottomColor: '#FD79A8', topText: '？', bottomText: '$D83D$DC8E', comment: 'ダイヤモンド発見！\nとても貴重です', topImage: null, bottomImage: null },
-            { topColor: '#55E6C1', bottomColor: '#FFA502', topText: '？', bottomText: '$D83C$DFC6', comment: 'トロフィーゲット！\nあなたは素晴らしい', topImage: null, bottomImage: null },
-            { topColor: '#26C6DA', bottomColor: '#FFA726', topText: '？', bottomText: '$D83C$DF81', comment: 'プレゼントです！\nおめでとうございます！', topImage: null, bottomImage: null }
-        ];
+        // デフォルトステージデータ（100ステージ）
+        function generateDefaultStages() {
+            const colors = ['#FF6B6B', '#95E1D3', '#AA96DA', '#A8D8EA', '#FFD93D', '#F7B731', '#FF6348', '#A29BFE', '#55E6C1', '#26C6DA',
+                           '#E74C3C', '#3498DB', '#9B59B6', '#1ABC9C', '#F39C12', '#2ECC71', '#E67E22', '#16A085', '#C0392B', '#8E44AD',
+                           '#FF5733', '#33FF57', '#3357FF', '#F333FF', '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845',
+                           '#FF6F91', '#FFC75F', '#845EC2', '#D65DB1', '#FF9671', '#FFC75F', '#F9F871', '#00C9A7', '#C34A36', '#4D908E',
+                           '#577590', '#43AA8B', '#90BE6D', '#F9C74F', '#F8961E', '#F3722C', '#F94144', '#277DA1', '#4D908E', '#F9844A',
+                           '#F9C74F', '#90BE6D', '#43AA8B', '#577590', '#277DA1', '#4ECDC4', '#FF6B6B', '#95E1D3', '#AA96DA', '#A8D8EA',
+                           '#FFD93D', '#F7B731', '#FF6348', '#A29BFE', '#55E6C1', '#26C6DA', '#E74C3C', '#3498DB', '#9B59B6', '#1ABC9C',
+                           '#F39C12', '#2ECC71', '#E67E22', '#16A085', '#C0392B', '#8E44AD', '#FF5733', '#33FF57', '#3357FF', '#F333FF',
+                           '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845', '#FF6F91', '#FFC75F', '#845EC2', '#D65DB1',
+                           '#FF9671', '#FFC75F', '#F9F871', '#00C9A7', '#C34A36', '#4D908E', '#577590', '#43AA8B', '#90BE6D', '#F9C74F'];
+
+            const emojis = ['$D83C$DF38', '$2600$FE0F', '$D83C$DF19', '$2B50', '$D83C$DF08', '$D83C$DFA8', '$D83C$DFB5', '$D83D$DC8E', '$D83C$DFC6', '$D83C$DF81',
+                          '$D83C$DFBA', '$D83C$DFFB', '$D83C$DF39', '$D83C$DF37', '$D83C$DFFC', '$D83C$DF40', '$D83C$DF3F', '$D83C$DF44', '$D83C$DF3E', '$D83C$DF34',
+                          '$D83C$DF4E', '$D83C$DF4A', '$D83C$DF4B', '$D83C$DF4C', '$D83C$DF49', '$D83C$DF47', '$D83C$DF53', '$D83C$DF51', '$D83C$DF52', '$D83C$DF4D',
+                          '$26BD', '$D83C$DFC0', '$26BE', '$D83C$DFBE', '$D83C$DFD0', '$D83C$DFC8', '$D83C$DFC9', '$D83C$DFB1', '$D83C$DFCF', '$D83C$DFF8',
+                          '$D83C$DFAF', '$D83C$DFAA', '$D83C$DFAD', '$D83C$DFAC', '$D83C$DFA4', '$D83C$DFA7', '$D83C$DFBC', '$D83C$DFB9', '$D83C$DFBA', '$D83C$DFFB',
+                          '$D83D$DE97', '$D83D$DE95', '$D83D$DE99', '$D83D$DE8C', '$D83D$DE8E', '$D83C$DFCE', '$D83D$DE93', '$D83D$DE91', '$D83D$DE92', '$D83D$DE90',
+                          '$2708$FE0F', '$D83D$DE80', '$D83D$DEFC', '$D83D$DE81', '$D83D$DEE0', '$26F5', '$D83D$DEA4', '$D83D$DEEC', '$26F4', '$D83D$DEA2',
+                          '$D83C$DFE0', '$D83C$DFE1', '$D83C$DFE2', '$D83C$DFE3', '$D83C$DFE4', '$D83C$DFE5', '$D83C$DFE6', '$D83C$DFE8', '$D83C$DFE9', '$D83C$DFEA',
+                          '$D83D$DC9D', '$D83D$DC96', '$D83D$DC97', '$D83D$DC93', '$D83D$DC9E', '$D83D$DC95', '$D83D$DC9F', '$2763', '$D83D$DC94', '$2764$FE0F',
+                          '$D83C$DF1F', '$2728', '$D83D$DCAB', '$D83C$DF20', '$26A1', '$D83D$DD25', '$D83D$DCA7', '$D83C$DF0A', '$D83C$DF42', '$D83C$DF41'];
+
+            const comments = [
+                '桜が咲きました！\n春の訪れですね', '太陽が輝いています！\n素敵な一日になりそう', '月が美しいですね\n静かな夜です',
+                '星が見えました！\nキラキラしています', '虹が出ました！\n幸運の予感です', 'アートの世界へ\nようこそ！',
+                '音楽が聞こえます\nリズムに乗って', 'ダイヤモンド発見！\nとても貴重です', 'トロフィーゲット！\nあなたは素晴らしい',
+                'プレゼントです！\nおめでとうございます！', '美しい花が咲いています\n素晴らしい景色ですね', '明るい光が差し込んでいます\n希望を感じます',
+                '新しい発見がありました！\nワクワクしますね', '素晴らしい景色です\n心が癒されます', '温かい気持ちになります\n幸せですね',
+                'ラッキーアイテムゲット！\n運気上昇中です', '新たな冒険の始まりです\n楽しみですね', 'すごい発見です！\n感動しました',
+                '美しい瞬間です\n大切にしたいですね', 'おめでとうございます！\n素晴らしい成果です',
+                'クリエイティブな発見！\nインスピレーション湧きます', '素敵な音色ですね\n心地よいリズムです', '輝く宝物を見つけました\n価値ある発見です',
+                '勝利の証です\n努力が実りました', '特別な贈り物ですね\nありがとうございます', '自然の美しさに\n感動しますね',
+                '穏やかな時間が流れます\nリラックスできます', 'ポジティブな気持ちに\nなれますね', '癒しの時間です\nゆっくりしましょう',
+                '前向きな気持ちになります\n頑張れそうです', '素晴らしい一日になりそう\nワクワクします', '新しい挑戦が始まります\n期待が膨らみます',
+                '美味しそうですね！\n食べたくなります', '爽やかな気分です\nリフレッシュできました', '甘い香りがします\n幸せな気持ちです',
+                'スポーツの楽しさを\n感じますね', 'アクティブに動きたく\nなりますね', 'エネルギッシュな気分\nになります',
+                'ゲーム感覚で楽しめます\n面白いですね', 'エンターテイメントの世界へ\nようこそ', '芸術的な美しさですね\n感性が磨かれます',
+                '音楽の力を感じます\n心が躍ります', '乗り物でどこへ行こう\nワクワクします', 'スピード感がありますね\nスリル満点です',
+                '旅立ちの時です\n新しい場所へ', '空を飛ぶ夢が叶います\n自由を感じます', '未来的なイメージですね\n想像が広がります',
+                '帰る場所があります\n安心感がありますね', '建物の美しさに\n目を奪われます', '都会的な雰囲気ですね\nモダンな感じです',
+                '愛が溢れています\n温かい気持ちです', 'ハートフルな瞬間\n大切にしたいですね', 'ロマンチックな雰囲気\n素敵ですね',
+                '輝きが増しています\nキラキラ光ります', '魔法のような瞬間\n不思議な気分です', '流れ星に願いを\n夢が叶いそうです',
+                'パワーアップしました\nエネルギーを感じます', '情熱的な気持ち\n燃え上がります', '清らかな水のように\n澄んだ気持ちです',
+                '大きな波が来ます\nダイナミックですね', '季節の移り変わり\n美しいですね', '自然の恵みに感謝\n豊かな気持ちです',
+                'ゴールまであと少し！\n頑張りましょう', '新たなステージへ\n進みましょう', 'あなたは輝いています\n素晴らしいです',
+                '達成感があります\n喜びを感じます', '幸運が訪れました\nツイています', 'ポジティブパワー全開\n元気が出ます',
+                '奇跡的な出会い\n運命を感じます', '心が温まります\n優しい気持ちです', 'インスピレーション\n湧き上がります',
+                '創造力が高まります\nアイデア満載です', 'チャンスが来ました\n掴み取りましょう', '楽しい時間です\n笑顔になれます',
+                'ハッピーな気分\n幸せいっぱいです', '素敵な出会いがあります\n嬉しいですね', 'ドリームが叶います\n夢のようです',
+                'ファンタスティック！\n素晴らしいです', 'ワンダフルな瞬間\n感動しました', 'エクセレント！\n最高です',
+                'パーフェクト！\n完璧ですね', 'アメージング！\n驚きました', 'ビューティフル！\n美しいです',
+                'グレート！\n素晴らしい', 'スーパー！\n凄いです', 'ブリリアント！\n輝いています',
+                'マジカル！\n魔法のようです', 'スペシャル！\n特別です', 'ユニーク！\n個性的ですね',
+                'ハーモニー！\n調和しています', 'ピースフル！\n平和です', 'ジョイフル！\n喜びに満ちています',
+                'チアフル！\n元気が出ます', 'ホープフル！\n希望があります', 'ブレス！\n祝福されています'
+            ];
+
+            const stages = [];
+            for (let i = 0; i < 100; i++) {
+                stages.push({
+                    topColor: colors[i],
+                    bottomColor: colors[(i + 50) % 100],
+                    topText: '？',
+                    bottomText: emojis[i],
+                    comment: comments[i],
+                    topImage: null,
+                    bottomImage: null
+                });
+            }
+            return stages;
+        }
+
+        const defaultStages = generateDefaultStages();
 
         // ステージデータ（LocalStorageから読み込み、なければデフォルト）
         let stages = loadStagesFromStorage();
@@ -712,6 +806,32 @@
             });
         }
 
+        // プレイモード用のステージセレクター初期化
+        function initPlayStageSelector() {
+            playStageSelector.innerHTML = '';
+            for (let i = 0; i < stages.length; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'stage-btn' + (i === currentStage ? ' active' : '');
+                btn.textContent = i + 1;
+                btn.onclick = () => selectPlayStage(i);
+                playStageSelector.appendChild(btn);
+            }
+        }
+
+        function selectPlayStage(index) {
+            if (index === currentStage) return;
+            currentStage = index;
+            updatePlayStageButtons();
+            loadStage(index);
+        }
+
+        function updatePlayStageButtons() {
+            const buttons = playStageSelector.querySelectorAll('.stage-btn');
+            buttons.forEach((btn, i) => {
+                btn.classList.toggle('active', i === currentStage);
+            });
+        }
+
         // モード切り替え
         playModeBtn.addEventListener('click', () => {
             playModeBtn.classList.add('active');
@@ -720,12 +840,14 @@
             gameContent.style.display = 'block';
             gameContent.classList.remove('hide');
             stageNumber.style.display = 'block';
+            playStageSelector.style.display = 'flex';
             document.querySelector('.brush-controls').style.display = 'flex';
-            
+
             // ステージデータを再読み込み
             stages = loadStagesFromStorage();
             // 現在のステージを再ロード
             if (currentStage < stages.length) {
+                initPlayStageSelector();
                 loadStage(currentStage);
             }
         });
@@ -736,6 +858,7 @@
             editMode.classList.add('show');
             gameContent.style.display = 'none';
             stageNumber.style.display = 'none';
+            playStageSelector.style.display = 'none';
             document.querySelector('.brush-controls').style.display = 'none';
             endingScreen.classList.remove('show');
             initEditMode();
@@ -890,8 +1013,8 @@
                     throw new Error('無効なデータ形式です');
                 }
 
-                if (importedData.stages.length !== 10) {
-                    throw new Error('ステージ数が正しくありません（10ステージ必要です）');
+                if (importedData.stages.length !== 100) {
+                    throw new Error('ステージ数が正しくありません（100ステージ必要です）');
                 }
 
                 // 各ステージのデータ構造を検証
@@ -968,6 +1091,7 @@
             stageCleared = false;
             commentBubble.classList.remove('show');
             stageNumber.textContent = `ステージ ${stageIndex + 1} / ${stages.length}`;
+            updatePlayStageButtons();
 
             const stage = stages[stageIndex];
             
@@ -1193,7 +1317,10 @@
                 gameContent.style.display = 'block';
                 document.querySelector('.brush-controls').style.display = 'flex';
                 stageNumber.style.display = 'block';
+                playStageSelector.style.display = 'flex';
                 // ステージ1をロード
+                currentStage = 0;
+                initPlayStageSelector();
                 loadStage(0);
             }
         });
@@ -1205,10 +1332,13 @@
         replayBtn.addEventListener('click', () => {
             endingScreen.classList.remove('show');
             gameContent.classList.remove('hide');
+            currentStage = 0;
+            initPlayStageSelector();
             loadStage(0);
         });
 
         // ゲーム開始
+        initPlayStageSelector();
         loadStage(0);
     </script>
 </body>
