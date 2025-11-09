@@ -768,7 +768,18 @@
         function loadStagesFromStorage() {
             const saved = localStorage.getItem('scratchGameStages');
             if (saved) {
-                return JSON.parse(saved);
+                const loadedStages = JSON.parse(saved);
+                // 100ステージ未満の場合は100ステージに拡張
+                if (loadedStages.length < 100) {
+                    console.log(`ステージ数を${loadedStages.length}から100に拡張します`);
+                    while (loadedStages.length < 100) {
+                        const index = loadedStages.length;
+                        loadedStages.push(JSON.parse(JSON.stringify(defaultStages[index])));
+                    }
+                    // 拡張したデータを保存
+                    localStorage.setItem('scratchGameStages', JSON.stringify(loadedStages));
+                }
+                return loadedStages;
             }
             return JSON.parse(JSON.stringify(defaultStages)); // ディープコピー
         }
