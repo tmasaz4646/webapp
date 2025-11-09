@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像スクラッチアプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .stage-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .mode-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .edit-mode {
+            display: none;
+        }
+
+        .edit-mode.show {
+            display: block;
+        }
+
+        .stage-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stage-btn {
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .stage-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .stage-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .image-upload-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .upload-box {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-box:hover {
+            border-color: #667eea;
+            background: #f9f9f9;
+        }
+
+        .upload-box h3 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .upload-box input[type="file"] {
+            display: none;
+        }
+
+        .upload-preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        .comment-input-area {
+            margin-bottom: 15px;
+        }
+
+        .comment-input-area label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .comment-input-area textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .file-input-wrapper {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .file-input-wrapper label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        input[type="file"]:hover {
+            border-color: #667eea;
+        }
+
+        .brush-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .brush-controls label {
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="range"] {
+            width: 150px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            cursor: crosshair;
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 5px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .comment-bubble {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            max-width: 250px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .comment-bubble.show {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .comment-bubble::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 30px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid white;
+        }
+
+        .comment-text {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .next-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .next-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .ending-screen {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .ending-screen.show {
+            display: block;
+        }
+
+        .ending-screen h2 {
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .ending-screen p {
+            font-size: 18px;
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+
+        .replay-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            display: inline-block;
+        }
+
+        .game-content {
+            display: block;
+        }
+
+        .game-content.hide {
+            display: none;
+        }
+
+        .custom-confirm {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .custom-confirm.show {
+            display: flex;
+        }
+
+        .confirm-dialog {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .confirm-dialog h3 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .confirm-btn {
+            padding: 10px 30px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .confirm-btn.yes {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .confirm-btn.no {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .confirm-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>$D83C$DFA8 画像スクラッチゲーム</h1>
+        
+        <div class="mode-selector">
+            <button class="mode-btn active" id="playModeBtn">$D83C$DFAE プレイモード</button>
+            <button class="mode-btn" id="editModeBtn">$270F$FE0F 編集モード</button>
+        </div>
+        
+        <div class="stage-info">
+            <span id="stageNumber">ステージ 1 / 10</span>
+        </div>
+
+        <div class="brush-controls">
+            <label>ブラシサイズ:</label>
+            <input type="range" id="brushSize" min="10" max="100" value="60">
+            <span id="brushValue">60px</span>
+            <button id="resetBtn">リセット</button>
+            <button id="backToStage1Btn">ステージ1に戻る</button>
+        </div>
+
+        <div class="edit-mode" id="editMode">
+            <div class="stage-selector" id="stageSelector"></div>
+            
+            <div class="image-upload-area">
+                <div class="upload-box" onclick="document.getElementById('topImageUpload').click()">
+                    <h3>上の画像（削る画像）</h3>
+                    <p>クリックして画像を選択</p>
+                    <input type="file" id="topImageUpload" accept="image/*">
+                    <img id="topPreview" class="upload-preview" style="display: none;">
+                </div>
+                
+                <div class="upload-box" onclick="document.getElementById('bottomImageUpload').click()">
+                    <h3>下の画像（見せたい画像）</h3>
+                    <p>クリックして画像を選択</p>
+                    <input type="file" id="bottomImageUpload" accept="image/*">
+                    <img id="bottomPreview" class="upload-preview" style="display: none;">
+                </div>
+            </div>
+
+            <div class="comment-input-area">
+                <label>クリア時のコメント:</label>
+                <textarea id="commentInput" placeholder="70%削った時に表示されるメッセージを入力してください"></textarea>
+            </div>
+
+            <button class="save-btn" id="saveStageBtn">このステージを保存</button>
+            <button class="save-btn" id="resetStageBtn" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">このステージをリセット</button>
+            
+            <div class="info">
+                $D83D$DCA1 各ステージの画像とコメントを設定できます
+            </div>
+        </div>
+
+        <div class="game-content">
+            <div class="canvas-wrapper">
+                <canvas id="canvas"></canvas>
+                <div class="comment-bubble" id="commentBubble">
+                    <div class="comment-text" id="commentText"></div>
+                    <button class="next-btn" id="nextBtn">次のステージへ →</button>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">削った割合: 0%</div>
+
+            <div class="info">
+                $D83D$DCA1 60%削るとメッセージが表示され、次に進めます（そのまま削り続けることも可能）
+            </div>
+        </div>
+
+        <div class="ending-screen" id="endingScreen">
+            <h2>$D83C$DF89 おめでとうございます！ $D83C$DF89</h2>
+            <p>
+                全10ステージクリア！<br>
+                あなたの削りスキルは最高です！<br><br>
+                隠れていた素敵な画像たちを<br>
+                全て見つけることができましたね。<br><br>
+                ありがとうございました！
+            </p>
+            <button class="replay-btn" id="replayBtn">もう一度プレイ</button>
+        </div>
+
+        <div class="custom-confirm" id="customConfirm">
+            <div class="confirm-dialog">
+                <h3 id="confirmMessage"></h3>
+                <div class="confirm-buttons">
+                    <button class="confirm-btn yes" id="confirmYes">はい</button>
+                    <button class="confirm-btn no" id="confirmNo">いいえ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const brushSizeInput = document.getElementById('brushSize');
+        const brushValue = document.getElementById('brushValue');
+        const resetBtn = document.getElementById('resetBtn');
+        const backToStage1Btn = document.getElementById('backToStage1Btn');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const commentBubble = document.getElementById('commentBubble');
+        const commentText = document.getElementById('commentText');
+        const nextBtn = document.getElementById('nextBtn');
+        const stageNumber = document.getElementById('stageNumber');
+        const endingScreen = document.getElementById('endingScreen');
+        const gameContent = document.querySelector('.game-content');
+        const replayBtn = document.getElementById('replayBtn');
+        const playModeBtn = document.getElementById('playModeBtn');
+        const editModeBtn = document.getElementById('editModeBtn');
+        const editMode = document.getElementById('editMode');
+        const stageSelector = document.getElementById('stageSelector');
+        const topImageUpload = document.getElementById('topImageUpload');
+        const bottomImageUpload = document.getElementById('bottomImageUpload');
+        const topPreview = document.getElementById('topPreview');
+        const bottomPreview = document.getElementById('bottomPreview');
+        const commentInput = document.getElementById('commentInput');
+        const saveStageBtn = document.getElementById('saveStageBtn');
+        const resetStageBtn = document.getElementById('resetStageBtn');
+        const customConfirm = document.getElementById('customConfirm');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmYes = document.getElementById('confirmYes');
+        const confirmNo = document.getElementById('confirmNo');
+
+        let currentStage = 0;
+        let currentEditStage = 0;
+        let bottomImage = null;
+        let topImage = null;
+        let isDrawing = false;
+        let brushSize = 60;
+        let lastX = 0;
+        let lastY = 0;
+        let stageCleared = false;
+        let scratchedCanvas = null; // 削った状態を保存するキャンバス
+        let confirmCallback = null; // 確認ダイアログのコールバック
+
+        // デフォルトステージデータ
+        const defaultStages = [
+            { topColor: '#FF6B6B', bottomColor: '#4ECDC4', topText: '？', bottomText: '$D83C$DF38', comment: '桜が咲きました！\n春の訪れですね', topImage: null, bottomImage: null },
+            { topColor: '#95E1D3', bottomColor: '#F38181', topText: '？', bottomText: '$2600$FE0F', comment: '太陽が輝いています！\n素敵な一日になりそう', topImage: null, bottomImage: null },
+            { topColor: '#AA96DA', bottomColor: '#FCBAD3', topText: '？', bottomText: '$D83C$DF19', comment: '月が美しいですね\n静かな夜です', topImage: null, bottomImage: null },
+            { topColor: '#A8D8EA', bottomColor: '#FFAAA7', topText: '？', bottomText: '$2B50', comment: '星が見えました！\nキラキラしています', topImage: null, bottomImage: null },
+            { topColor: '#FFD93D', bottomColor: '#6BCB77', topText: '？', bottomText: '$D83C$DF08', comment: '虹が出ました！\n幸運の予感です', topImage: null, bottomImage: null },
+            { topColor: '#F7B731', bottomColor: '#5352ED', topText: '？', bottomText: '$D83C$DFA8', comment: 'アートの世界へ\nようこそ！', topImage: null, bottomImage: null },
+            { topColor: '#FF6348', bottomColor: '#2ECC71', topText: '？', bottomText: '$D83C$DFB5', comment: '音楽が聞こえます\nリズムに乗って', topImage: null, bottomImage: null },
+            { topColor: '#A29BFE', bottomColor: '#FD79A8', topText: '？', bottomText: '$D83D$DC8E', comment: 'ダイヤモンド発見！\nとても貴重です', topImage: null, bottomImage: null },
+            { topColor: '#55E6C1', bottomColor: '#FFA502', topText: '？', bottomText: '$D83C$DFC6', comment: 'トロフィーゲット！\nあなたは素晴らしい', topImage: null, bottomImage: null },
+            { topColor: '#26C6DA', bottomColor: '#FFA726', topText: '？', bottomText: '$D83C$DF81', comment: 'プレゼントです！\nおめでとうございます！', topImage: null, bottomImage: null }
+        ];
+
+        // ステージデータ（LocalStorageから読み込み、なければデフォルト）
+        let stages = loadStagesFromStorage();
+
+        // ブラシサイズの更新
+        brushSizeInput.addEventListener('input', (e) => {
+            brushSize = e.target.value;
+            brushValue.textContent = brushSize + 'px';
+        });
+
+        // カスタム確認ダイアログ
+        function showConfirm(message) {
+            return new Promise((resolve) => {
+                confirmMessage.textContent = message;
+                customConfirm.classList.add('show');
+                confirmCallback = resolve;
+            });
+        }
+
+        confirmYes.addEventListener('click', () => {
+            customConfirm.classList.remove('show');
+            if (confirmCallback) {
+                confirmCallback(true);
+                confirmCallback = null;
+            }
+        });
+
+        confirmNo.addEventListener('click', () => {
+            customConfirm.classList.remove('show');
+            if (confirmCallback) {
+                confirmCallback(false);
+                confirmCallback = null;
+            }
+        });
+
+        // LocalStorageからステージデータを読み込む
+        function loadStagesFromStorage() {
+            const saved = localStorage.getItem('scratchGameStages');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            return JSON.parse(JSON.stringify(defaultStages)); // ディープコピー
+        }
+
+        // ステージデータを保存
+        function saveStages() {
+            localStorage.setItem('scratchGameStages', JSON.stringify(stages));
+        }
+
+        // 画像を圧縮する関数
+        function compressImage(imageDataUrl, maxWidth = 800, quality = 0.7) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // 最大幅を超える場合はリサイズ
+                    if (width > maxWidth) {
+                        height = (height * maxWidth) / width;
+                        width = maxWidth;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // JPEG形式で圧縮（品質0.7）
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.src = imageDataUrl;
+            });
+        }
+
+        // モード切り替え
+        playModeBtn.addEventListener('click', () => {
+            playModeBtn.classList.add('active');
+            editModeBtn.classList.remove('active');
+            editMode.classList.remove('show');
+            gameContent.style.display = 'block';
+            gameContent.classList.remove('hide');
+            stageNumber.style.display = 'block';
+            document.querySelector('.brush-controls').style.display = 'flex';
+            
+            // ステージデータを再読み込み
+            stages = loadStagesFromStorage();
+            // 現在のステージを再ロード
+            if (currentStage < stages.length) {
+                loadStage(currentStage);
+            }
+        });
+
+        editModeBtn.addEventListener('click', () => {
+            editModeBtn.classList.add('active');
+            playModeBtn.classList.remove('active');
+            editMode.classList.add('show');
+            gameContent.style.display = 'none';
+            stageNumber.style.display = 'none';
+            document.querySelector('.brush-controls').style.display = 'none';
+            endingScreen.classList.remove('show');
+            initEditMode();
+        });
+
+        // 編集モード初期化
+        function initEditMode() {
+            stageSelector.innerHTML = '';
+            for (let i = 0; i < stages.length; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'stage-btn' + (i === currentEditStage ? ' active' : '');
+                btn.textContent = `ステージ ${i + 1}`;
+                btn.onclick = () => selectEditStage(i);
+                stageSelector.appendChild(btn);
+            }
+            loadEditStage(currentEditStage);
+        }
+
+        function selectEditStage(index) {
+            currentEditStage = index;
+            document.querySelectorAll('.stage-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+            loadEditStage(index);
+        }
+
+        function loadEditStage(index) {
+            const stage = stages[index];
+            commentInput.value = stage.comment;
+            
+            if (stage.topImage) {
+                topPreview.src = stage.topImage;
+                topPreview.style.display = 'block';
+            } else {
+                topPreview.style.display = 'none';
+            }
+            
+            if (stage.bottomImage) {
+                bottomPreview.src = stage.bottomImage;
+                bottomPreview.style.display = 'block';
+            } else {
+                bottomPreview.style.display = 'none';
+            }
+        }
+
+        // 画像アップロード
+        topImageUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const compressed = await compressImage(event.target.result);
+                    topPreview.src = compressed;
+                    topPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        bottomImageUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const compressed = await compressImage(event.target.result);
+                    bottomPreview.src = compressed;
+                    bottomPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // ステージ保存
+        saveStageBtn.addEventListener('click', () => {
+            const stage = stages[currentEditStage];
+            stage.comment = commentInput.value;
+            
+            if (topPreview.style.display !== 'none') {
+                stage.topImage = topPreview.src;
+            }
+            
+            if (bottomPreview.style.display !== 'none') {
+                stage.bottomImage = bottomPreview.src;
+            }
+            
+            try {
+                saveStages();
+                alert('ステージを保存しました！');
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    alert('保存容量を超えています。画像サイズが大きすぎる可能性があります。より小さい画像を使用してください。');
+                } else {
+                    alert('保存に失敗しました: ' + e.message);
+                }
+            }
+        });
+
+        // ステージリセット
+        resetStageBtn.addEventListener('click', async () => {
+            const confirmed = await showConfirm('このステージをデフォルトに戻しますか？');
+            if (confirmed) {
+                stages[currentEditStage] = JSON.parse(JSON.stringify(defaultStages[currentEditStage]));
+                saveStages();
+                loadEditStage(currentEditStage);
+                alert('ステージをリセットしました！');
+            }
+        });
+
+        // 画像を生成する関数
+        function createStageImage(color, text, isTop = false) {
+            return new Promise((resolve) => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 800;
+                tempCanvas.height = 600;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                const gradient = tempCtx.createLinearGradient(0, 0, 800, 600);
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(1, adjustBrightness(color, isTop ? -20 : 20));
+                tempCtx.fillStyle = gradient;
+                tempCtx.fillRect(0, 0, 800, 600);
+                
+                tempCtx.fillStyle = 'white';
+                tempCtx.font = 'bold 150px Arial';
+                tempCtx.textAlign = 'center';
+                tempCtx.textBaseline = 'middle';
+                tempCtx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                tempCtx.shadowBlur = 10;
+                tempCtx.fillText(text, 400, 300);
+                
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = tempCanvas.toDataURL();
+            });
+        }
+
+        function adjustBrightness(hex, percent) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const r = Math.min(255, Math.max(0, (num >> 16) + percent));
+            const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + percent));
+            const b = Math.min(255, Math.max(0, (num & 0x0000FF) + percent));
+            return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+        }
+
+        // ステージをロード
+        async function loadStage(stageIndex) {
+            if (stageIndex >= stages.length) {
+                showEnding();
+                return;
+            }
+
+            currentStage = stageIndex;
+            stageCleared = false;
+            commentBubble.classList.remove('show');
+            stageNumber.textContent = `ステージ ${stageIndex + 1} / ${stages.length}`;
+
+            const stage = stages[stageIndex];
+            
+            // カスタム画像があればそれを使用、なければデフォルト生成
+            if (stage.bottomImage) {
+                bottomImage = new Image();
+                bottomImage.src = stage.bottomImage;
+                await new Promise(resolve => bottomImage.onload = resolve);
+            } else {
+                bottomImage = await createStageImage(stage.bottomColor, stage.bottomText, false);
+            }
+            
+            if (stage.topImage) {
+                topImage = new Image();
+                topImage.src = stage.topImage;
+                await new Promise(resolve => topImage.onload = resolve);
+            } else {
+                topImage = await createStageImage(stage.topColor, stage.topText, true);
+            }
+            
+            setupCanvas();
+        }
+
+        function setupCanvas() {
+            const maxWidth = 800;
+            const scale = Math.min(1, maxWidth / topImage.width);
+            
+            canvas.width = topImage.width * scale;
+            canvas.height = topImage.height * scale;
+
+            // 削った状態を保存するキャンバスを作成
+            scratchedCanvas = document.createElement('canvas');
+            scratchedCanvas.width = canvas.width;
+            scratchedCanvas.height = canvas.height;
+            const scratchCtx = scratchedCanvas.getContext('2d');
+            scratchCtx.fillStyle = 'white';
+            scratchCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawImages();
+            updateProgress();
+        }
+
+        function drawImages() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(bottomImage, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(topImage, 0, 0, canvas.width, canvas.height);
+        }
+
+        // マウスイベント
+        canvas.addEventListener('mousedown', startDrawing);
+        document.addEventListener('mousemove', draw);
+        document.addEventListener('mouseup', stopDrawing);
+
+        // タッチイベント
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            isDrawing = true;
+            lastX = x;
+            lastY = y;
+            scratch(x, y);
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            scratchLine(lastX, lastY, x, y);
+            lastX = x;
+            lastY = y;
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            lastX = x;
+            lastY = y;
+            scratch(x, y);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height) {
+                scratchLine(lastX, lastY, x, y);
+            }
+            
+            lastX = x;
+            lastY = y;
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                updateProgress();
+            }
+        }
+
+        function scratch(x, y) {
+            if (!topImage || !bottomImage) return;
+
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.drawImage(bottomImage, 0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+
+            // 削った部分を記録
+            const scratchCtx = scratchedCanvas.getContext('2d');
+            scratchCtx.globalCompositeOperation = 'destination-out';
+            scratchCtx.beginPath();
+            scratchCtx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+            scratchCtx.fill();
+            scratchCtx.globalCompositeOperation = 'source-over';
+        }
+
+        function scratchLine(x1, y1, x2, y2) {
+            if (!topImage || !bottomImage) return;
+
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = brushSize;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.drawImage(bottomImage, 0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+
+            // 削った部分を記録
+            const scratchCtx = scratchedCanvas.getContext('2d');
+            scratchCtx.globalCompositeOperation = 'destination-out';
+            scratchCtx.lineCap = 'round';
+            scratchCtx.lineJoin = 'round';
+            scratchCtx.lineWidth = brushSize;
+            scratchCtx.beginPath();
+            scratchCtx.moveTo(x1, y1);
+            scratchCtx.lineTo(x2, y2);
+            scratchCtx.stroke();
+            scratchCtx.globalCompositeOperation = 'source-over';
+        }
+
+        function updateProgress() {
+            if (!scratchedCanvas) return;
+
+            const scratchCtx = scratchedCanvas.getContext('2d');
+            const imageData = scratchCtx.getImageData(0, 0, scratchedCanvas.width, scratchedCanvas.height);
+            const pixels = imageData.data;
+            let transparentPixels = 0;
+            
+            for (let i = 3; i < pixels.length; i += 4) {
+                if (pixels[i] < 128) {
+                    transparentPixels++;
+                }
+            }
+            
+            const totalPixels = scratchedCanvas.width * scratchedCanvas.height;
+            const percentage = Math.round((transparentPixels / totalPixels) * 100);
+            
+            progressFill.style.width = percentage + '%';
+            progressText.textContent = `削った割合: ${percentage}%`;
+
+            // 60%でメッセージ表示してクリア状態に
+            if (percentage >= 60 && !stageCleared) {
+                stageCleared = true;
+                showComment();
+            }
+        }
+
+        function showComment() {
+            const stage = stages[currentStage];
+            commentText.textContent = stage.comment;
+            commentBubble.classList.add('show');
+        }
+
+        function showEnding() {
+            gameContent.classList.add('hide');
+            endingScreen.classList.add('show');
+        }
+
+        resetBtn.addEventListener('click', () => {
+            if (topImage && bottomImage) {
+                // 削った状態をリセット
+                const scratchCtx = scratchedCanvas.getContext('2d');
+                scratchCtx.fillStyle = 'white';
+                scratchCtx.fillRect(0, 0, scratchedCanvas.width, scratchedCanvas.height);
+                
+                drawImages();
+                progressFill.style.width = '0%';
+                progressText.textContent = '削った割合: 0%';
+                stageCleared = false;
+                commentBubble.classList.remove('show');
+            }
+        });
+
+        backToStage1Btn.addEventListener('click', async () => {
+            const confirmed = await showConfirm('ステージ1に戻りますか？');
+            if (confirmed) {
+                // エンディング画面を非表示
+                endingScreen.classList.remove('show');
+                gameContent.classList.remove('hide');
+                gameContent.style.display = 'block';
+                document.querySelector('.brush-controls').style.display = 'flex';
+                stageNumber.style.display = 'block';
+                // ステージ1をロード
+                loadStage(0);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            loadStage(currentStage + 1);
+        });
+
+        replayBtn.addEventListener('click', () => {
+            endingScreen.classList.remove('show');
+            gameContent.classList.remove('hide');
+            loadStage(0);
+        });
+
+        // ゲーム開始
+        loadStage(0);
+    </script>
+</body>
+</html>
