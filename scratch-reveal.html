@@ -503,11 +503,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>$D83C$DFA8 画像スクラッチゲーム</h1>
+        <h1>🎨 画像スクラッチゲーム</h1>
         
         <div class="mode-selector">
-            <button class="mode-btn active" id="playModeBtn">$D83C$DFAE プレイモード</button>
-            <button class="mode-btn" id="editModeBtn">$270F$FE0F 編集モード</button>
+            <button class="mode-btn active" id="playModeBtn">🎮 プレイモード</button>
+            <button class="mode-btn" id="editModeBtn">✏️ 編集モード</button>
         </div>
         
         <div class="stage-info">
@@ -552,14 +552,14 @@
             <button class="save-btn" id="resetStageBtn" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">このステージをリセット</button>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                <button class="save-btn" id="exportDataBtn" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">$D83D$DCBE データをエクスポート</button>
-                <button class="save-btn" id="importDataBtn" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">$D83D$DCBE データをインポート</button>
+                <button class="save-btn" id="exportDataBtn" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">💾 データをエクスポート</button>
+                <button class="save-btn" id="importDataBtn" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">💾 データをインポート</button>
             </div>
             <input type="file" id="importFileInput" accept=".json" style="display: none;">
 
             <div class="info">
-                $D83D$DCA1 各ステージの画像とコメントを設定できます<br>
-                $D83D$DCBE エクスポート/インポートで全ステージのデータをバックアップ・復元できます
+                💡 各ステージの画像とコメントを設定できます<br>
+                💾 エクスポート/インポートで全ステージのデータをバックアップ・復元できます
             </div>
         </div>
 
@@ -578,12 +578,12 @@
             <div class="progress-text" id="progressText">削った割合: 0%</div>
 
             <div class="info">
-                $D83D$DCA1 60%削るとメッセージが表示され、次に進めます（そのまま削り続けることも可能）
+                💡 60%削るとメッセージが表示され、次に進めます（そのまま削り続けることも可能）
             </div>
         </div>
 
         <div class="ending-screen" id="endingScreen">
-            <h2>$D83C$DF89 おめでとうございます！ $D83C$DF89</h2>
+            <h2>🎉 おめでとうございます！ 🎉</h2>
             <p>
                 全100ステージクリア！<br>
                 あなたの削りスキルは最高です！<br><br>
@@ -667,16 +667,16 @@
                            '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845', '#FF6F91', '#FFC75F', '#845EC2', '#D65DB1',
                            '#FF9671', '#FFC75F', '#F9F871', '#00C9A7', '#C34A36', '#4D908E', '#577590', '#43AA8B', '#90BE6D', '#F9C74F'];
 
-            const emojis = ['$D83C$DF38', '$2600$FE0F', '$D83C$DF19', '$2B50', '$D83C$DF08', '$D83C$DFA8', '$D83C$DFB5', '$D83D$DC8E', '$D83C$DFC6', '$D83C$DF81',
-                          '$D83C$DFBA', '$D83C$DFFB', '$D83C$DF39', '$D83C$DF37', '$D83C$DFFC', '$D83C$DF40', '$D83C$DF3F', '$D83C$DF44', '$D83C$DF3E', '$D83C$DF34',
-                          '$D83C$DF4E', '$D83C$DF4A', '$D83C$DF4B', '$D83C$DF4C', '$D83C$DF49', '$D83C$DF47', '$D83C$DF53', '$D83C$DF51', '$D83C$DF52', '$D83C$DF4D',
-                          '$26BD', '$D83C$DFC0', '$26BE', '$D83C$DFBE', '$D83C$DFD0', '$D83C$DFC8', '$D83C$DFC9', '$D83C$DFB1', '$D83C$DFCF', '$D83C$DFF8',
-                          '$D83C$DFAF', '$D83C$DFAA', '$D83C$DFAD', '$D83C$DFAC', '$D83C$DFA4', '$D83C$DFA7', '$D83C$DFBC', '$D83C$DFB9', '$D83C$DFBA', '$D83C$DFFB',
-                          '$D83D$DE97', '$D83D$DE95', '$D83D$DE99', '$D83D$DE8C', '$D83D$DE8E', '$D83C$DFCE', '$D83D$DE93', '$D83D$DE91', '$D83D$DE92', '$D83D$DE90',
-                          '$2708$FE0F', '$D83D$DE80', '$D83D$DEFC', '$D83D$DE81', '$D83D$DEE0', '$26F5', '$D83D$DEA4', '$D83D$DEEC', '$26F4', '$D83D$DEA2',
-                          '$D83C$DFE0', '$D83C$DFE1', '$D83C$DFE2', '$D83C$DFE3', '$D83C$DFE4', '$D83C$DFE5', '$D83C$DFE6', '$D83C$DFE8', '$D83C$DFE9', '$D83C$DFEA',
-                          '$D83D$DC9D', '$D83D$DC96', '$D83D$DC97', '$D83D$DC93', '$D83D$DC9E', '$D83D$DC95', '$D83D$DC9F', '$2763', '$D83D$DC94', '$2764$FE0F',
-                          '$D83C$DF1F', '$2728', '$D83D$DCAB', '$D83C$DF20', '$26A1', '$D83D$DD25', '$D83D$DCA7', '$D83C$DF0A', '$D83C$DF42', '$D83C$DF41'];
+            const emojis = ['🌸', '☀️', '🌙', '⭐', '🌈', '🎨', '🎵', '💎', '🏆', '🎁',
+                          '🎺', '🏻', '🌹', '🌷', '🏼', '🍀', '🌿', '🍄', '🌾', '🌴',
+                          '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍑', '🍒', '🍍',
+                          '⚽', '🏀', '⚾', '🎾', '🏐', '🏈', '🏉', '🎱', '🏏', '🏸',
+                          '🎯', '🎪', '🎭', '🎬', '🎤', '🎧', '🎼', '🎹', '🎺', '🏻',
+                          '🚗', '🚕', '🚙', '🚌', '🚎', '🏎', '🚓', '🚑', '🚒', '🚐',
+                          '✈️', '🚀', '🛼', '🚁', '🛠', '⛵', '🚤', '🛬', '⛴', '🚢',
+                          '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨', '🏩', '🏪',
+                          '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣', '💔', '❤️',
+                          '🌟', '✨', '💫', '🌠', '⚡', '🔥', '💧', '🌊', '🍂', '🍁'];
 
             const comments = [
                 '桜が咲きました！\n春の訪れですね', '太陽が輝いています！\n素敵な一日になりそう', '月が美しいですね\n静かな夜です',
