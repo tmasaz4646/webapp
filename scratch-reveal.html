@@ -684,6 +684,7 @@
         let autoScratchY = 0; // オートスクラッチの現在のY位置
         let autoScratchX = 0; // オートスクラッチの現在のX位置
         let autoScratchDirection = 1; // オートスクラッチの方向（1: 右, -1: 左）
+        let isTransitioning = false; // ステージ遷移中かどうか
 
         // デフォルトステージデータ（35ステージ）
         function generateDefaultStages() {
@@ -1784,10 +1785,12 @@
             progressText.textContent = `削った割合: ${percentage}%`;
 
             // オートスクラッチモード: 100%で自動的に次のステージへ
-            if (autoScratching && percentage >= 100) {
+            if (autoScratching && percentage >= 100 && !isTransitioning) {
+                isTransitioning = true;
                 resetAutoScratchPosition();
                 setTimeout(() => {
                     loadStage(currentStage + 1);
+                    isTransitioning = false;
                 }, 500);
                 return;
             }
@@ -1866,6 +1869,7 @@
             autoScratchY = 0;
             autoScratchX = 0;
             autoScratchDirection = 1;
+            isTransitioning = false;
             autoScratchBtn.textContent = 'オートスクラッチ開始';
 
             if (autoScratchInterval) {
