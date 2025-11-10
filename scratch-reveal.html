@@ -1824,10 +1824,6 @@
                 'horizontal-from-bottom',   // 左右の下から
                 'vertical-from-left',       // 上下の左から
                 'vertical-from-right',      // 上下の右から
-                'diagonal-top-left',        // 斜めの左上から
-                'diagonal-top-right',       // 斜めの右上から
-                'diagonal-bottom-left',     // 斜めの左下から
-                'diagonal-bottom-right',    // 斜めの右下から
                 'spiral',                   // うずまき（中心から外へ）
                 'spiral-reverse'            // 逆うずまき（外から中心へ）
             ];
@@ -1856,30 +1852,6 @@
                 autoScratchX = canvas.width;
                 autoScratchY = 0;
                 autoScratchDirection = 1;
-            } else if (autoScratchPattern === 'diagonal-top-left') {
-                // 左上から右下へ斜め - 対角往復
-                autoScratchX = 0;
-                autoScratchY = 0;
-                autoScratchDirection = 1; // 1: 進む, -1: 戻る
-                autoScratchProgress = 0; // 対角線上の進行度 (0-1)
-            } else if (autoScratchPattern === 'diagonal-top-right') {
-                // 右上から左下へ斜め - 対角往復
-                autoScratchX = canvas.width;
-                autoScratchY = 0;
-                autoScratchDirection = 1;
-                autoScratchProgress = 0;
-            } else if (autoScratchPattern === 'diagonal-bottom-left') {
-                // 左下から右上へ斜め - 対角往復
-                autoScratchX = 0;
-                autoScratchY = canvas.height;
-                autoScratchDirection = 1;
-                autoScratchProgress = 0;
-            } else if (autoScratchPattern === 'diagonal-bottom-right') {
-                // 右下から左上へ斜め - 対角往復
-                autoScratchX = canvas.width;
-                autoScratchY = canvas.height;
-                autoScratchDirection = 1;
-                autoScratchProgress = 0;
             } else if (autoScratchPattern === 'spiral') {
                 // うずまき（中心から外へ）
                 autoScratchX = canvas.width / 2;
@@ -1964,129 +1936,6 @@
                     if (autoScratchX <= 0) {
                         autoScratchX = canvas.width;
                         autoScratchY = 0;
-                        autoScratchDirection = 1;
-                    }
-                } else if (autoScratchPattern === 'diagonal-top-left') {
-                    // 左上⇔右下 往復 - 対角線を行ったり来たりしながら、垂直方向にずらす
-                    const diagonalLength = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
-                    const normalizedStep = stepSize / diagonalLength;
-
-                    autoScratchProgress += normalizedStep * autoScratchDirection;
-
-                    // 端に達したら折り返し、垂直方向にずらす
-                    if (autoScratchProgress >= 1) {
-                        autoScratchProgress = 1;
-                        autoScratchDirection = -1;
-                        autoScratchOffset += stepSize * 1.5;
-                    } else if (autoScratchProgress <= 0) {
-                        autoScratchProgress = 0;
-                        autoScratchDirection = 1;
-                        autoScratchOffset += stepSize * 1.5;
-                    }
-
-                    // 対角線上の位置 + 垂直方向のオフセット
-                    const baseX = canvas.width * autoScratchProgress;
-                    const baseY = canvas.height * autoScratchProgress;
-                    const perpX = -autoScratchOffset * Math.sin(Math.PI / 4);
-                    const perpY = autoScratchOffset * Math.cos(Math.PI / 4);
-
-                    autoScratchX = baseX + perpX;
-                    autoScratchY = baseY + perpY;
-
-                    // 画面外に出たらリセット
-                    if (autoScratchOffset > diagonalLength) {
-                        autoScratchOffset = 0;
-                        autoScratchProgress = 0;
-                        autoScratchDirection = 1;
-                    }
-                } else if (autoScratchPattern === 'diagonal-top-right') {
-                    // 右上⇔左下 往復
-                    const diagonalLength = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
-                    const normalizedStep = stepSize / diagonalLength;
-
-                    autoScratchProgress += normalizedStep * autoScratchDirection;
-
-                    if (autoScratchProgress >= 1) {
-                        autoScratchProgress = 1;
-                        autoScratchDirection = -1;
-                        autoScratchOffset += stepSize * 1.5;
-                    } else if (autoScratchProgress <= 0) {
-                        autoScratchProgress = 0;
-                        autoScratchDirection = 1;
-                        autoScratchOffset += stepSize * 1.5;
-                    }
-
-                    const baseX = canvas.width - canvas.width * autoScratchProgress;
-                    const baseY = canvas.height * autoScratchProgress;
-                    const perpX = autoScratchOffset * Math.sin(Math.PI / 4);
-                    const perpY = autoScratchOffset * Math.cos(Math.PI / 4);
-
-                    autoScratchX = baseX + perpX;
-                    autoScratchY = baseY + perpY;
-
-                    if (autoScratchOffset > diagonalLength) {
-                        autoScratchOffset = 0;
-                        autoScratchProgress = 0;
-                        autoScratchDirection = 1;
-                    }
-                } else if (autoScratchPattern === 'diagonal-bottom-left') {
-                    // 左下⇔右上 往復
-                    const diagonalLength = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
-                    const normalizedStep = stepSize / diagonalLength;
-
-                    autoScratchProgress += normalizedStep * autoScratchDirection;
-
-                    if (autoScratchProgress >= 1) {
-                        autoScratchProgress = 1;
-                        autoScratchDirection = -1;
-                        autoScratchOffset += stepSize * 1.5;
-                    } else if (autoScratchProgress <= 0) {
-                        autoScratchProgress = 0;
-                        autoScratchDirection = 1;
-                        autoScratchOffset += stepSize * 1.5;
-                    }
-
-                    const baseX = canvas.width * autoScratchProgress;
-                    const baseY = canvas.height - canvas.height * autoScratchProgress;
-                    const perpX = autoScratchOffset * Math.sin(Math.PI / 4);
-                    const perpY = autoScratchOffset * Math.cos(Math.PI / 4);
-
-                    autoScratchX = baseX + perpX;
-                    autoScratchY = baseY + perpY;
-
-                    if (autoScratchOffset > diagonalLength) {
-                        autoScratchOffset = 0;
-                        autoScratchProgress = 0;
-                        autoScratchDirection = 1;
-                    }
-                } else if (autoScratchPattern === 'diagonal-bottom-right') {
-                    // 右下⇔左上 往復
-                    const diagonalLength = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
-                    const normalizedStep = stepSize / diagonalLength;
-
-                    autoScratchProgress += normalizedStep * autoScratchDirection;
-
-                    if (autoScratchProgress >= 1) {
-                        autoScratchProgress = 1;
-                        autoScratchDirection = -1;
-                        autoScratchOffset += stepSize * 1.5;
-                    } else if (autoScratchProgress <= 0) {
-                        autoScratchProgress = 0;
-                        autoScratchDirection = 1;
-                        autoScratchOffset += stepSize * 1.5;
-                    }
-
-                    const baseX = canvas.width - canvas.width * autoScratchProgress;
-                    const baseY = canvas.height - canvas.height * autoScratchProgress;
-                    const perpX = -autoScratchOffset * Math.sin(Math.PI / 4);
-                    const perpY = -autoScratchOffset * Math.cos(Math.PI / 4);
-
-                    autoScratchX = baseX + perpX;
-                    autoScratchY = baseY + perpY;
-
-                    if (autoScratchOffset > diagonalLength) {
-                        autoScratchOffset = 0;
-                        autoScratchProgress = 0;
                         autoScratchDirection = 1;
                     }
                 } else if (autoScratchPattern === 'spiral') {
@@ -2214,7 +2063,7 @@
         オートスクラッチパターン説明
         ========================================
 
-        このゲームには10種類のオートスクラッチパターンがあり、
+        このゲームには6種類のオートスクラッチパターンがあり、
         各ステージでランダムに1つが選ばれて実行されます。
 
         1. horizontal-from-top (左右の上から)
@@ -2237,38 +2086,17 @@
            - vertical-from-leftの逆方向版
            - 右から左へ、縦方向に削る
 
-        5. diagonal-top-left (斜めの左上から)
-           - 左上の角から右下の角へ向かって往復
-           - 対角線上を行ったり来たりしながら、徐々に垂直方向にずれる
-           - ごしごし感のある斜め削り
-           - 左上⇔右下の往復を繰り返しながら全体をカバー
-
-        6. diagonal-top-right (斜めの右上から)
-           - 右上の角から左下の角へ向かって往復
-           - diagonal-top-leftの反対方向版
-           - 右上⇔左下の往復で削る
-
-        7. diagonal-bottom-left (斜めの左下から)
-           - 左下の角から右上の角へ向かって往復
-           - 左下⇔右上の往復動作
-           - 斜め方向の窓拭き風
-
-        8. diagonal-bottom-right (斜めの右下から)
-           - 右下の角から左上の角へ向かって往復
-           - 右下⇔左上の往復で削る
-           - 4つの対角パターンの最後
-
-        9. spiral (うずまき：中心から外へ)
+        5. spiral (うずまき：中心から外へ)
            - 画面中央から開始
            - 渦巻き状に外側へ広がっていく
            - 半径を徐々に大きくしながら回転
            - 画面端に達したら中心に戻る
 
-        10. spiral-reverse (逆うずまき：外から中心へ)
-            - 画面外側の大きな円から開始
-            - 渦巻き状に中心へ向かって縮小
-            - 半径を徐々に小さくしながら回転
-            - 中心に達したら外側に戻る
+        6. spiral-reverse (逆うずまき：外から中心へ)
+           - 画面外側の大きな円から開始
+           - 渦巻き状に中心へ向かって縮小
+           - 半径を徐々に小さくしながら回転
+           - 中心に達したら外側に戻る
 
         全てのパターンは:
         - ブラシサイズに応じた適切なスピードで動作
