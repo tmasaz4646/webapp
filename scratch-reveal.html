@@ -1636,7 +1636,7 @@
             scratchedCanvas = document.createElement('canvas');
             scratchedCanvas.width = canvas.width;
             scratchedCanvas.height = canvas.height;
-            const scratchCtx = scratchedCanvas.getContext('2d');
+            const scratchCtx = scratchedCanvas.getContext('2d', { willReadFrequently: true });
             scratchCtx.fillStyle = 'white';
             scratchCtx.fillRect(0, 0, canvas.width, canvas.height);
 
