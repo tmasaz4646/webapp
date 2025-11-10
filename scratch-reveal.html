@@ -682,6 +682,8 @@
         let autoScratching = false; // オートスクラッチ中かどうか
         let autoScratchInterval = null; // オートスクラッチのインターバル
         let autoScratchY = 0; // オートスクラッチの現在のY位置
+        let autoScratchX = 0; // オートスクラッチの現在のX位置
+        let autoScratchDirection = 1; // オートスクラッチの方向（1: 右, -1: 左）
 
         // デフォルトステージデータ（35ステージ）
         function generateDefaultStages() {
@@ -1783,7 +1785,7 @@
 
             // オートスクラッチモード: 100%で自動的に次のステージへ
             if (autoScratching && percentage >= 100) {
-                stopAutoScratch();
+                resetAutoScratchPosition();
                 setTimeout(() => {
                     loadStage(currentStage + 1);
                 }, 500);
@@ -1814,6 +1816,8 @@
 
             autoScratching = true;
             autoScratchY = 0;
+            autoScratchX = 0;
+            autoScratchDirection = 1;
             autoScratchBtn.textContent = 'オートスクラッチ停止';
 
             autoScratchInterval = setInterval(() => {
@@ -1822,24 +1826,36 @@
                     return;
                 }
 
-                // 幅全体をカバーするように等間隔で削る
-                const step = 8; // Y座標の増分（小さくして確実にカバー）
-                const spacing = brushSize * 0.6; // ブラシサイズの60%間隔で描画（重なりを持たせる）
+                // 窓拭きのように左右にジグザグしながら下に進む
+                const stepX = brushSize * 1.2; // X方向の移動量（重なりを持たせる）
+                const stepY = brushSize * 0.8; // Y方向の移動量
 
-                // 現在のY座標で幅全体をカバー
-                for (let x = 0; x <= canvas.width; x += spacing) {
-                    scratchLine(x, autoScratchY, x, autoScratchY + step);
+                // 前回の位置から現在の位置まで線を引く
+                const prevX = autoScratchX;
+                const prevY = autoScratchY;
+
+                // X方向に移動
+                autoScratchX += stepX * autoScratchDirection;
+
+                // 端に到達したら方向転換して下に移動
+                if (autoScratchX >= canvas.width || autoScratchX <= 0) {
+                    autoScratchX = Math.max(0, Math.min(canvas.width, autoScratchX));
+                    autoScratchDirection *= -1; // 方向反転
+                    autoScratchY += stepY;
                 }
 
-                autoScratchY += step;
+                // 線を描画（窓拭きのような動き）
+                scratchLine(prevX, prevY, autoScratchX, autoScratchY);
 
                 // 画面の下まで到達したら上に戻る
                 if (autoScratchY >= canvas.height) {
                     autoScratchY = 0;
+                    autoScratchX = 0;
+                    autoScratchDirection = 1;
                 }
 
                 updateProgress();
-            }, 50); // 50msごとに実行
+            }, 30); // 30msごとに実行（少し速く）
         }
 
         // オートスクラッチ停止
@@ -1848,12 +1864,21 @@
 
             autoScratching = false;
             autoScratchY = 0;
+            autoScratchX = 0;
+            autoScratchDirection = 1;
             autoScratchBtn.textContent = 'オートスクラッチ開始';
 
             if (autoScratchInterval) {
                 clearInterval(autoScratchInterval);
                 autoScratchInterval = null;
             }
+        }
+
+        // オートスクラッチの位置をリセット（継続する場合）
+        function resetAutoScratchPosition() {
+            autoScratchY = 0;
+            autoScratchX = 0;
+            autoScratchDirection = 1;
         }
 
         // オートスクラッチボタン
