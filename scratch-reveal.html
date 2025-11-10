@@ -687,6 +687,8 @@
         let isTransitioning = false; // ステージ遷移中かどうか
         let autoScratchPattern = 'horizontal-from-top'; // 現在のパターン
         let autoScratchOffset = 0; // 斜めパターン用のオフセット
+        let autoScratchAngle = 0; // うずまき用の角度
+        let autoScratchRadius = 0; // うずまき用の半径
 
         // デフォルトステージデータ（35ステージ）
         function generateDefaultStages() {
@@ -1825,7 +1827,9 @@
                 'diagonal-top-left',        // 斜めの左上から
                 'diagonal-top-right',       // 斜めの右上から
                 'diagonal-bottom-left',     // 斜めの左下から
-                'diagonal-bottom-right'     // 斜めの右下から
+                'diagonal-bottom-right',    // 斜めの右下から
+                'spiral',                   // うずまき（中心から外へ）
+                'spiral-reverse'            // 逆うずまき（外から中心へ）
             ];
             autoScratchPattern = patterns[Math.floor(Math.random() * patterns.length)];
 
@@ -1868,6 +1872,18 @@
                 // 右下から左上へ斜め
                 autoScratchX = canvas.width;
                 autoScratchY = canvas.height;
+            } else if (autoScratchPattern === 'spiral') {
+                // うずまき（中心から外へ）
+                autoScratchX = canvas.width / 2;
+                autoScratchY = canvas.height / 2;
+                autoScratchAngle = 0;
+                autoScratchRadius = 0;
+            } else if (autoScratchPattern === 'spiral-reverse') {
+                // 逆うずまき（外から中心へ）
+                autoScratchX = canvas.width / 2;
+                autoScratchY = canvas.height / 2;
+                autoScratchAngle = 0;
+                autoScratchRadius = Math.max(canvas.width, canvas.height) * 0.7;
             }
         }
 
@@ -2025,6 +2041,36 @@
                                 autoScratchY = canvas.height;
                             }
                         }
+                    }
+                } else if (autoScratchPattern === 'spiral') {
+                    // うずまき（中心から外へ）- スピードアップ
+                    autoScratchRadius += 2.0;
+                    autoScratchAngle += 0.2;
+
+                    autoScratchX = canvas.width / 2 + Math.cos(autoScratchAngle) * autoScratchRadius;
+                    autoScratchY = canvas.height / 2 + Math.sin(autoScratchAngle) * autoScratchRadius;
+
+                    // 画面外に出たら中心に戻る
+                    if (autoScratchRadius > Math.max(canvas.width, canvas.height)) {
+                        autoScratchRadius = 0;
+                        autoScratchAngle = 0;
+                        autoScratchX = canvas.width / 2;
+                        autoScratchY = canvas.height / 2;
+                    }
+                } else if (autoScratchPattern === 'spiral-reverse') {
+                    // 逆うずまき（外から中心へ）- スピードアップ
+                    autoScratchRadius -= 2.0;
+                    autoScratchAngle += 0.2;
+
+                    autoScratchX = canvas.width / 2 + Math.cos(autoScratchAngle) * autoScratchRadius;
+                    autoScratchY = canvas.height / 2 + Math.sin(autoScratchAngle) * autoScratchRadius;
+
+                    // 中心に達したら外に戻る
+                    if (autoScratchRadius <= 0) {
+                        autoScratchRadius = Math.max(canvas.width, canvas.height) * 0.7;
+                        autoScratchAngle = 0;
+                        autoScratchX = canvas.width / 2 + autoScratchRadius;
+                        autoScratchY = canvas.height / 2;
                     }
                 }
 
