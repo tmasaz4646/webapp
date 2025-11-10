@@ -1822,17 +1822,13 @@
                     return;
                 }
 
-                // 上から下へランダムに線を描画
-                const lineCount = 5; // 1フレームあたりの線の数
-                const step = 10; // Y座標の増分
+                // 幅全体をカバーするように等間隔で削る
+                const step = 8; // Y座標の増分（小さくして確実にカバー）
+                const spacing = brushSize * 0.6; // ブラシサイズの60%間隔で描画（重なりを持たせる）
 
-                for (let i = 0; i < lineCount; i++) {
-                    const x = Math.random() * canvas.width;
-                    const y = autoScratchY + (Math.random() * step * 2);
-                    const endX = x + (Math.random() - 0.5) * 100;
-                    const endY = y + step;
-
-                    scratchLine(x, y, endX, endY);
+                // 現在のY座標で幅全体をカバー
+                for (let x = 0; x <= canvas.width; x += spacing) {
+                    scratchLine(x, autoScratchY, x, autoScratchY + step);
                 }
 
                 autoScratchY += step;
