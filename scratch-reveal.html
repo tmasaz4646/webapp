@@ -1826,7 +1826,8 @@
                 'bottom-to-top',    // 下から上へ
                 'diagonal',         // 左上から右下へ斜め
                 'diagonal-reverse', // 右上から左下へ斜め
-                'spiral'            // うずまき（中心から外へ）
+                'spiral',           // うずまき（中心から外へ）
+                'spiral-reverse'    // 逆うずまき（外から中心へ）
             ];
             autoScratchPattern = patterns[Math.floor(Math.random() * patterns.length)];
 
@@ -1848,12 +1849,17 @@
             } else if (autoScratchPattern === 'diagonal-reverse') {
                 autoScratchX = canvas.width;
                 autoScratchY = 0;
-                autoScratchDirection = 1;
+                autoScratchDirection = -1;
             } else if (autoScratchPattern === 'spiral') {
                 autoScratchX = canvas.width / 2;
                 autoScratchY = canvas.height / 2;
                 autoScratchAngle = 0;
                 autoScratchRadius = 0;
+            } else if (autoScratchPattern === 'spiral-reverse') {
+                autoScratchX = canvas.width / 2;
+                autoScratchY = canvas.height / 2;
+                autoScratchAngle = 0;
+                autoScratchRadius = Math.max(canvas.width, canvas.height) * 0.7;
             } else {
                 autoScratchX = 0;
                 autoScratchY = 0;
@@ -1933,65 +1939,61 @@
                         autoScratchDirection = -1;
                     }
                 } else if (autoScratchPattern === 'diagonal') {
-                    // 左上から右下へ斜め - 平行な斜め線を順番に描く
-                    autoScratchX += stepSize * 0.7;
+                    // 左上から右下へ斜め - ジグザグで全体をカバー
+                    autoScratchX += stepSize * 0.7 * autoScratchDirection;
                     autoScratchY += stepSize * 0.7;
 
-                    // 端に達したら次の平行線へ
-                    if (autoScratchX >= canvas.width || autoScratchY >= canvas.height) {
+                    // 下端に達したら上に戻って右にずれる
+                    if (autoScratchY >= canvas.height) {
+                        autoScratchY = 0;
                         autoScratchOffset += stepSize;
+                        autoScratchX = autoScratchOffset;
 
-                        // 左端の下方向から開始
-                        if (autoScratchOffset < canvas.height) {
+                        // 右端を超えたらリセット
+                        if (autoScratchOffset >= canvas.width) {
+                            autoScratchOffset = 0;
                             autoScratchX = 0;
-                            autoScratchY = autoScratchOffset;
                         }
-                        // 上端の右方向から開始
-                        else {
-                            const xOffset = autoScratchOffset - canvas.height;
-                            if (xOffset < canvas.width) {
-                                autoScratchX = xOffset;
-                                autoScratchY = 0;
-                            } else {
-                                // 全て終了したらリセット
-                                autoScratchOffset = 0;
-                                autoScratchX = 0;
-                                autoScratchY = 0;
-                            }
-                        }
+                    }
+
+                    // 左端または右端に達したら方向転換
+                    if (autoScratchX <= 0) {
+                        autoScratchX = 0;
+                        autoScratchDirection = 1;
+                    } else if (autoScratchX >= canvas.width) {
+                        autoScratchX = canvas.width;
+                        autoScratchDirection = -1;
                     }
                 } else if (autoScratchPattern === 'diagonal-reverse') {
-                    // 右上から左下へ斜め - 平行な斜め線を順番に描く
-                    autoScratchX -= stepSize * 0.7;
+                    // 右上から左下へ斜め - ジグザグで全体をカバー
+                    autoScratchX += stepSize * 0.7 * autoScratchDirection;
                     autoScratchY += stepSize * 0.7;
 
-                    // 端に達したら次の平行線へ
-                    if (autoScratchX <= 0 || autoScratchY >= canvas.height) {
+                    // 下端に達したら上に戻って左にずれる
+                    if (autoScratchY >= canvas.height) {
+                        autoScratchY = 0;
                         autoScratchOffset += stepSize;
+                        autoScratchX = canvas.width - autoScratchOffset;
 
-                        // 右端の下方向から開始
-                        if (autoScratchOffset < canvas.height) {
+                        // 左端を超えたらリセット
+                        if (autoScratchOffset >= canvas.width) {
+                            autoScratchOffset = 0;
                             autoScratchX = canvas.width;
-                            autoScratchY = autoScratchOffset;
-                        }
-                        // 上端の左方向から開始
-                        else {
-                            const xOffset = autoScratchOffset - canvas.height;
-                            if (xOffset < canvas.width) {
-                                autoScratchX = canvas.width - xOffset;
-                                autoScratchY = 0;
-                            } else {
-                                // 全て終了したらリセット
-                                autoScratchOffset = 0;
-                                autoScratchX = canvas.width;
-                                autoScratchY = 0;
-                            }
                         }
                     }
+
+                    // 左端または右端に達したら方向転換
+                    if (autoScratchX <= 0) {
+                        autoScratchX = 0;
+                        autoScratchDirection = 1;
+                    } else if (autoScratchX >= canvas.width) {
+                        autoScratchX = canvas.width;
+                        autoScratchDirection = -1;
+                    }
                 } else if (autoScratchPattern === 'spiral') {
-                    // うずまき（中心から外へ）
-                    autoScratchRadius += 0.8;
-                    autoScratchAngle += 0.15;
+                    // うずまき（中心から外へ）- スピードアップ
+                    autoScratchRadius += 2.0;
+                    autoScratchAngle += 0.2;
 
                     autoScratchX = canvas.width / 2 + Math.cos(autoScratchAngle) * autoScratchRadius;
                     autoScratchY = canvas.height / 2 + Math.sin(autoScratchAngle) * autoScratchRadius;
@@ -2001,6 +2003,21 @@
                         autoScratchRadius = 0;
                         autoScratchAngle = 0;
                         autoScratchX = canvas.width / 2;
+                        autoScratchY = canvas.height / 2;
+                    }
+                } else if (autoScratchPattern === 'spiral-reverse') {
+                    // 逆うずまき（外から中心へ）- スピードアップ
+                    autoScratchRadius -= 2.0;
+                    autoScratchAngle += 0.2;
+
+                    autoScratchX = canvas.width / 2 + Math.cos(autoScratchAngle) * autoScratchRadius;
+                    autoScratchY = canvas.height / 2 + Math.sin(autoScratchAngle) * autoScratchRadius;
+
+                    // 中心に達したら外に戻る
+                    if (autoScratchRadius <= 0) {
+                        autoScratchRadius = Math.max(canvas.width, canvas.height) * 0.7;
+                        autoScratchAngle = 0;
+                        autoScratchX = canvas.width / 2 + autoScratchRadius;
                         autoScratchY = canvas.height / 2;
                     }
                 }
