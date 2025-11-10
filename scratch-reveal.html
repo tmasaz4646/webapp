@@ -688,6 +688,7 @@
         let autoScratchPattern = 'left-to-right'; // 現在のパターン
         let autoScratchAngle = 0; // うずまき用の角度
         let autoScratchRadius = 0; // うずまき用の半径
+        let autoScratchOffset = 0; // 斜めパターン用のオフセット
 
         // デフォルトステージデータ（35ステージ）
         function generateDefaultStages() {
@@ -1830,6 +1831,8 @@
             autoScratchPattern = patterns[Math.floor(Math.random() * patterns.length)];
 
             // パターンに応じた初期化
+            autoScratchOffset = 0;
+
             if (autoScratchPattern === 'right-to-left') {
                 autoScratchX = canvas.width;
                 autoScratchY = 0;
@@ -1838,6 +1841,10 @@
                 autoScratchX = 0;
                 autoScratchY = canvas.height;
                 autoScratchDirection = -1;
+            } else if (autoScratchPattern === 'diagonal') {
+                autoScratchX = 0;
+                autoScratchY = 0;
+                autoScratchDirection = 1;
             } else if (autoScratchPattern === 'diagonal-reverse') {
                 autoScratchX = canvas.width;
                 autoScratchY = 0;
@@ -1926,45 +1933,60 @@
                         autoScratchDirection = -1;
                     }
                 } else if (autoScratchPattern === 'diagonal') {
-                    // 左上から右下へ斜め（ジグザグ）
-                    autoScratchX += stepSize * 0.7 * autoScratchDirection;
+                    // 左上から右下へ斜め - 平行な斜め線を順番に描く
+                    autoScratchX += stepSize * 0.7;
                     autoScratchY += stepSize * 0.7;
 
-                    // 右端または下端に到達したら次の列
+                    // 端に達したら次の平行線へ
                     if (autoScratchX >= canvas.width || autoScratchY >= canvas.height) {
-                        if (autoScratchDirection === 1) {
-                            // 左側から次の開始位置を探す
-                            autoScratchY = Math.min(autoScratchY, canvas.height);
+                        autoScratchOffset += stepSize;
+
+                        // 左端の下方向から開始
+                        if (autoScratchOffset < canvas.height) {
                             autoScratchX = 0;
-                            if (autoScratchY >= canvas.height) {
+                            autoScratchY = autoScratchOffset;
+                        }
+                        // 上端の右方向から開始
+                        else {
+                            const xOffset = autoScratchOffset - canvas.height;
+                            if (xOffset < canvas.width) {
+                                autoScratchX = xOffset;
+                                autoScratchY = 0;
+                            } else {
+                                // 全て終了したらリセット
+                                autoScratchOffset = 0;
+                                autoScratchX = 0;
                                 autoScratchY = 0;
                             }
                         }
-                    }
-
-                    // 左端に到達したら反対方向に
-                    if (autoScratchX <= 0) {
-                        autoScratchX = 0;
-                        autoScratchDirection *= -1;
                     }
                 } else if (autoScratchPattern === 'diagonal-reverse') {
-                    // 右上から左下へ斜め
-                    autoScratchX += stepSize * 0.7 * autoScratchDirection;
+                    // 右上から左下へ斜め - 平行な斜め線を順番に描く
+                    autoScratchX -= stepSize * 0.7;
                     autoScratchY += stepSize * 0.7;
 
+                    // 端に達したら次の平行線へ
                     if (autoScratchX <= 0 || autoScratchY >= canvas.height) {
-                        if (autoScratchDirection === -1) {
-                            autoScratchY = Math.min(autoScratchY, canvas.height);
+                        autoScratchOffset += stepSize;
+
+                        // 右端の下方向から開始
+                        if (autoScratchOffset < canvas.height) {
                             autoScratchX = canvas.width;
-                            if (autoScratchY >= canvas.height) {
+                            autoScratchY = autoScratchOffset;
+                        }
+                        // 上端の左方向から開始
+                        else {
+                            const xOffset = autoScratchOffset - canvas.height;
+                            if (xOffset < canvas.width) {
+                                autoScratchX = canvas.width - xOffset;
+                                autoScratchY = 0;
+                            } else {
+                                // 全て終了したらリセット
+                                autoScratchOffset = 0;
+                                autoScratchX = canvas.width;
                                 autoScratchY = 0;
                             }
                         }
-                    }
-
-                    if (autoScratchX >= canvas.width) {
-                        autoScratchX = canvas.width;
-                        autoScratchDirection *= -1;
                     }
                 } else if (autoScratchPattern === 'spiral') {
                     // うずまき（中心から外へ）
