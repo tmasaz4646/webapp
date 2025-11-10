@@ -531,6 +531,7 @@
             <input type="range" id="brushSize" min="10" max="100" value="60">
             <span id="brushValue">60px</span>
             <button id="resetBtn">リセット</button>
+            <button id="autoScratchBtn">オートスクラッチ開始</button>
             <button id="backToStage1Btn">ステージ1に戻る</button>
         </div>
 
@@ -631,6 +632,7 @@
         const brushSizeInput = document.getElementById('brushSize');
         const brushValue = document.getElementById('brushValue');
         const resetBtn = document.getElementById('resetBtn');
+        const autoScratchBtn = document.getElementById('autoScratchBtn');
         const backToStage1Btn = document.getElementById('backToStage1Btn');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
@@ -677,6 +679,9 @@
         let stageCleared = false;
         let scratchedCanvas = null; // 削った状態を保存するキャンバス
         let confirmCallback = null; // 確認ダイアログのコールバック
+        let autoScratching = false; // オートスクラッチ中かどうか
+        let autoScratchInterval = null; // オートスクラッチのインターバル
+        let autoScratchY = 0; // オートスクラッチの現在のY位置
 
         // デフォルトステージデータ（35ステージ）
         function generateDefaultStages() {
@@ -847,6 +852,7 @@
 
         function selectPlayStage(index) {
             if (index === currentStage) return;
+            stopAutoScratch(); // オートスクラッチを停止
             currentStage = index;
             updatePlayStageButtons();
             loadStage(index);
@@ -861,6 +867,7 @@
 
         // モード切り替え
         playModeBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
             playModeBtn.classList.add('active');
             editModeBtn.classList.remove('active');
             editMode.classList.remove('show');
@@ -880,6 +887,7 @@
         });
 
         editModeBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
             editModeBtn.classList.add('active');
             playModeBtn.classList.remove('active');
             editMode.classList.add('show');
@@ -1760,21 +1768,30 @@
             const imageData = scratchCtx.getImageData(0, 0, scratchedCanvas.width, scratchedCanvas.height);
             const pixels = imageData.data;
             let transparentPixels = 0;
-            
+
             for (let i = 3; i < pixels.length; i += 4) {
                 if (pixels[i] < 128) {
                     transparentPixels++;
                 }
             }
-            
+
             const totalPixels = scratchedCanvas.width * scratchedCanvas.height;
             const percentage = Math.round((transparentPixels / totalPixels) * 100);
-            
+
             progressFill.style.width = percentage + '%';
             progressText.textContent = `削った割合: ${percentage}%`;
 
-            // 60%でメッセージ表示してクリア状態に
-            if (percentage >= 60 && !stageCleared) {
+            // オートスクラッチモード: 80%で自動的に次のステージへ
+            if (autoScratching && percentage >= 80) {
+                stopAutoScratch();
+                setTimeout(() => {
+                    loadStage(currentStage + 1);
+                }, 500);
+                return;
+            }
+
+            // 通常モード: 60%でメッセージ表示してクリア状態に
+            if (!autoScratching && percentage >= 60 && !stageCleared) {
                 stageCleared = true;
                 showComment();
             }
@@ -1791,13 +1808,76 @@
             endingScreen.classList.add('show');
         }
 
+        // オートスクラッチ開始
+        function startAutoScratch() {
+            if (autoScratching) return;
+
+            autoScratching = true;
+            autoScratchY = 0;
+            autoScratchBtn.textContent = 'オートスクラッチ停止';
+
+            autoScratchInterval = setInterval(() => {
+                if (!topImage || !bottomImage || !scratchedCanvas) {
+                    stopAutoScratch();
+                    return;
+                }
+
+                // 上から下へランダムに線を描画
+                const lineCount = 5; // 1フレームあたりの線の数
+                const step = 10; // Y座標の増分
+
+                for (let i = 0; i < lineCount; i++) {
+                    const x = Math.random() * canvas.width;
+                    const y = autoScratchY + (Math.random() * step * 2);
+                    const endX = x + (Math.random() - 0.5) * 100;
+                    const endY = y + step;
+
+                    scratchLine(x, y, endX, endY);
+                }
+
+                autoScratchY += step;
+
+                // 画面の下まで到達したら上に戻る
+                if (autoScratchY >= canvas.height) {
+                    autoScratchY = 0;
+                }
+
+                updateProgress();
+            }, 50); // 50msごとに実行
+        }
+
+        // オートスクラッチ停止
+        function stopAutoScratch() {
+            if (!autoScratching) return;
+
+            autoScratching = false;
+            autoScratchY = 0;
+            autoScratchBtn.textContent = 'オートスクラッチ開始';
+
+            if (autoScratchInterval) {
+                clearInterval(autoScratchInterval);
+                autoScratchInterval = null;
+            }
+        }
+
+        // オートスクラッチボタン
+        autoScratchBtn.addEventListener('click', () => {
+            if (autoScratching) {
+                stopAutoScratch();
+            } else {
+                startAutoScratch();
+            }
+        });
+
         resetBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
+
             if (topImage && bottomImage) {
                 // 削った状態をリセット
                 const scratchCtx = scratchedCanvas.getContext('2d');
                 scratchCtx.fillStyle = 'white';
                 scratchCtx.fillRect(0, 0, scratchedCanvas.width, scratchedCanvas.height);
-                
+
                 drawImages();
                 progressFill.style.width = '0%';
                 progressText.textContent = '削った割合: 0%';
@@ -1807,6 +1887,7 @@
         });
 
         backToStage1Btn.addEventListener('click', async () => {
+            stopAutoScratch(); // オートスクラッチを停止
             const confirmed = await showConfirm('ステージ1に戻りますか？');
             if (confirmed) {
                 // エンディング画面を非表示
@@ -1824,10 +1905,12 @@
         });
 
         nextBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
             loadStage(currentStage + 1);
         });
 
         replayBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
             endingScreen.classList.remove('show');
             gameContent.classList.remove('hide');
             currentStage = 0;
