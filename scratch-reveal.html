@@ -1034,6 +1034,38 @@
             }
         }
 
+        // データを自動エクスポートする関数
+        function autoExportData(partNumber, startStage, endStage) {
+            try {
+                const dataToExport = {
+                    version: '1.0',
+                    exportDate: new Date().toISOString(),
+                    partNumber: partNumber,
+                    stageRange: `${startStage + 1}-${endStage + 1}`,
+                    stages: stages
+                };
+
+                const jsonString = JSON.stringify(dataToExport, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const filename = `scratch-game-part${partNumber}-${new Date().toISOString().split('T')[0]}.json`;
+
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                console.log(`Part ${partNumber} exported: ${filename}`);
+                return true;
+            } catch (e) {
+                console.error('Auto export failed:', e);
+                return false;
+            }
+        }
+
         // ペア画像を一括処理（1枚目→削る、2枚目→見せたい、3枚目→削る...）
         async function handlePairImages(files) {
             if (files.length === 0) return;
@@ -1042,27 +1074,11 @@
             const pairCount = Math.floor(sortedFiles.length / 2);
             const remainingFiles = sortedFiles.length % 2;
 
-            // 容量チェック: ペア（2枚）あたり約140KB（圧縮後）として概算
-            const estimatedSizePerPair = 140 * 1024; // 140KB
-            const estimatedTotalSize = pairCount * estimatedSizePerPair;
-            const availableStorage = getAvailableStorage();
-
-            if (estimatedTotalSize > availableStorage) {
-                alert(
-                    `⚠️ 容量不足の可能性があります\n\n` +
-                    `登録しようとするペア数: ${pairCount}組（${pairCount * 2}枚）\n` +
-                    `推定必要容量: ${Math.round(estimatedTotalSize / 1024)}KB\n` +
-                    `利用可能容量: ${Math.round(availableStorage / 1024)}KB\n\n` +
-                    `画像数を減らすか、既存のステージ画像を削除してください。`
-                );
-                return;
-            }
-
             const confirmed = await showConfirm(
                 `${sortedFiles.length}個の画像を作成日順にペアで一括登録します。\n` +
-                `${pairCount}組のペア（${pairCount * 2}枚）がステージ${currentEditStage + 1}から登録されます。\n` +
+                `${pairCount}組のペア（${pairCount * 2}枚）をステージ${currentEditStage + 1}から登録します。\n` +
                 (remainingFiles > 0 ? `※ 残り${remainingFiles}枚は登録されません\n` : '') +
-                `推定容量: ${Math.round(estimatedTotalSize / 1024)}KB\n` +
+                `\n容量が満杯になった場合は自動的にエクスポートして続行します。\n` +
                 `よろしいですか？`
             );
 
@@ -1070,12 +1086,27 @@
 
             let processedPairs = 0;
             let failedCount = 0;
+            let exportCount = 0;
+            let partStartStage = currentEditStage;
 
             for (let i = 0; i < sortedFiles.length - 1; i += 2) {
-                const targetStage = currentEditStage + processedPairs;
+                const targetStage = processedPairs; // 常にステージ0から詰める
                 if (targetStage >= stages.length) {
-                    alert(`ステージ${targetStage + 1}は存在しないため、残りの画像をスキップしました。`);
-                    break;
+                    // ステージ上限に達したので、現在のデータをエクスポート
+                    exportCount++;
+                    autoExportData(exportCount, partStartStage, stages.length - 1);
+
+                    // 全ステージをリセット
+                    for (let j = 0; j < stages.length; j++) {
+                        stages[j] = JSON.parse(JSON.stringify(defaultStages[j]));
+                    }
+                    saveStages();
+
+                    // 次のパートを開始
+                    processedPairs = 0;
+                    partStartStage = 0;
+                    i -= 2; // このペアをもう一度処理
+                    continue;
                 }
 
                 try {
@@ -1103,45 +1134,68 @@
                     stages[targetStage].topImage = topCompressed;
                     stages[targetStage].bottomImage = bottomCompressed;
 
-                    processedPairs++;
+                    // 保存を試みる
+                    try {
+                        saveStages();
+                        processedPairs++;
+                    } catch (saveError) {
+                        // 容量エラーの場合
+                        if (saveError.name === 'QuotaExceededError') {
+                            // 直前のステージまでをエクスポート
+                            exportCount++;
+
+                            // 登録失敗した画像を削除
+                            stages[targetStage].topImage = null;
+                            stages[targetStage].bottomImage = null;
+                            saveStages();
+
+                            // エクスポート実行
+                            autoExportData(exportCount, partStartStage, targetStage - 1);
+
+                            // 全ステージをリセット
+                            for (let j = 0; j < stages.length; j++) {
+                                stages[j] = JSON.parse(JSON.stringify(defaultStages[j]));
+                            }
+                            saveStages();
+
+                            // 次のパートを開始
+                            processedPairs = 0;
+                            partStartStage = 0;
+                            i -= 2; // このペアをもう一度処理
+                        } else {
+                            throw saveError;
+                        }
+                    }
                 } catch (error) {
-                    console.error(`ペア ${processedPairs + 1} の処理に失敗:`, error);
+                    console.error(`ペア ${i/2 + 1} の処理に失敗:`, error);
                     failedCount++;
                 }
             }
 
-            // データを保存
-            try {
-                saveStages();
-                const currentSize = Math.round(getStorageSize() / 1024);
-                const availableSize = Math.round(getAvailableStorage() / 1024);
-                alert(
-                    `ペア一括登録が完了しました！\n` +
-                    `登録ペア数: ${processedPairs}組（${processedPairs * 2}枚）\n` +
-                    (failedCount > 0 ? `失敗: ${failedCount}組\n` : '') +
-                    (remainingFiles > 0 ? `未登録: ${remainingFiles}枚\n` : '') +
-                    `ステージ${currentEditStage + 1}〜${currentEditStage + processedPairs}に登録されました。\n\n` +
-                    `現在の使用容量: ${currentSize}KB\n` +
-                    `残り容量: ${availableSize}KB`
-                );
-                loadEditStage(currentEditStage);
-            } catch (e) {
-                if (e.name === 'QuotaExceededError') {
-                    const currentSize = Math.round(getStorageSize() / 1024);
-                    alert(
-                        `❌ 保存容量を超えました\n\n` +
-                        `現在の使用容量: ${currentSize}KB\n` +
-                        `処理済み: ${processedPairs}組（${processedPairs * 2}枚）\n\n` +
-                        `対策:\n` +
-                        `・登録する画像数を減らす\n` +
-                        `・既存のステージ画像を削除する\n` +
-                        `・データをエクスポートしてバックアップ後、\n` +
-                        `  不要なステージをリセットする`
-                    );
-                } else {
-                    alert('保存に失敗しました: ' + e.message);
-                }
+            // 最後のパートをエクスポート（画像が登録されている場合のみ）
+            if (processedPairs > 0) {
+                exportCount++;
+                autoExportData(exportCount, partStartStage, processedPairs - 1);
             }
+
+            // 完了メッセージ
+            const totalProcessed = Math.floor((sortedFiles.length - remainingFiles) / 2);
+            const currentSize = Math.round(getStorageSize() / 1024);
+            const availableSize = Math.round(getAvailableStorage() / 1024);
+
+            alert(
+                `ペア一括登録が完了しました！\n\n` +
+                `総処理ペア数: ${totalProcessed}組（${totalProcessed * 2}枚）\n` +
+                (failedCount > 0 ? `失敗: ${failedCount}組\n` : '') +
+                (remainingFiles > 0 ? `未登録: ${remainingFiles}枚\n` : '') +
+                `エクスポートファイル数: ${exportCount}個\n\n` +
+                `💾 ${exportCount}個のJSONファイルがダウンロードされました。\n` +
+                `各ファイルには35ステージ分のデータが含まれています。\n\n` +
+                `現在の使用容量: ${currentSize}KB\n` +
+                `残り容量: ${availableSize}KB`
+            );
+
+            loadEditStage(0);
         }
 
         // 画像アップロード（単一・複数対応）
