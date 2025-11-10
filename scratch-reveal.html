@@ -1781,8 +1781,8 @@
             progressFill.style.width = percentage + '%';
             progressText.textContent = `削った割合: ${percentage}%`;
 
-            // オートスクラッチモード: 80%で自動的に次のステージへ
-            if (autoScratching && percentage >= 80) {
+            // オートスクラッチモード: 100%で自動的に次のステージへ
+            if (autoScratching && percentage >= 100) {
                 stopAutoScratch();
                 setTimeout(() => {
                     loadStage(currentStage + 1);
