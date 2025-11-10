@@ -689,6 +689,7 @@
         let autoScratchAngle = 0; // うずまき用の角度
         let autoScratchRadius = 0; // うずまき用の半径
         let autoScratchOffset = 0; // 斜めパターン用のオフセット
+        let currentPatternIndex = 0; // 現在のパターンインデックス（順番に選択）
 
         // デフォルトステージデータ（35ステージ）
         function generateDefaultStages() {
@@ -1817,8 +1818,8 @@
             endingScreen.classList.add('show');
         }
 
-        // パターンをランダムに選択（1ステージ1パターン）
-        function selectRandomPattern() {
+        // パターンを順番に選択（1ステージ1パターン）
+        function selectNextPattern() {
             const patterns = [
                 'left-to-right',    // 左から右へ（横ジグザグ）
                 'right-to-left',    // 右から左へ
@@ -1829,7 +1830,8 @@
                 'spiral',           // うずまき（中心から外へ）
                 'spiral-reverse'    // 逆うずまき（外から中心へ）
             ];
-            autoScratchPattern = patterns[Math.floor(Math.random() * patterns.length)];
+            autoScratchPattern = patterns[currentPatternIndex % patterns.length];
+            currentPatternIndex++;
 
             // パターンに応じた初期化
             autoScratchOffset = 0;
@@ -1872,7 +1874,7 @@
             if (autoScratching) return;
 
             autoScratching = true;
-            selectRandomPattern();
+            selectNextPattern();
             autoScratchBtn.textContent = 'オートスクラッチ停止';
 
             autoScratchInterval = setInterval(() => {
@@ -1939,56 +1941,60 @@
                         autoScratchDirection = -1;
                     }
                 } else if (autoScratchPattern === 'diagonal') {
-                    // 左上から右下へ斜め - ジグザグで全体をカバー
-                    autoScratchX += stepSize * 0.7 * autoScratchDirection;
+                    // 左上から右下へ斜め - 平行な斜め線を順番に
+                    autoScratchX += stepSize * 0.7;
                     autoScratchY += stepSize * 0.7;
 
-                    // 下端に達したら上に戻って右にずれる
-                    if (autoScratchY >= canvas.height) {
-                        autoScratchY = 0;
+                    // 右端または下端に達したら次の平行線へ
+                    if (autoScratchX >= canvas.width || autoScratchY >= canvas.height) {
                         autoScratchOffset += stepSize;
-                        autoScratchX = autoScratchOffset;
 
-                        // 右端を超えたらリセット
-                        if (autoScratchOffset >= canvas.width) {
-                            autoScratchOffset = 0;
+                        // まず左端を下に移動
+                        if (autoScratchOffset < canvas.height) {
                             autoScratchX = 0;
+                            autoScratchY = autoScratchOffset;
                         }
-                    }
-
-                    // 左端または右端に達したら方向転換
-                    if (autoScratchX <= 0) {
-                        autoScratchX = 0;
-                        autoScratchDirection = 1;
-                    } else if (autoScratchX >= canvas.width) {
-                        autoScratchX = canvas.width;
-                        autoScratchDirection = -1;
+                        // 次に上端を右に移動
+                        else {
+                            const xOffset = autoScratchOffset - canvas.height;
+                            if (xOffset < canvas.width) {
+                                autoScratchX = xOffset;
+                                autoScratchY = 0;
+                            } else {
+                                // 全て完了したらリセット
+                                autoScratchOffset = 0;
+                                autoScratchX = 0;
+                                autoScratchY = 0;
+                            }
+                        }
                     }
                 } else if (autoScratchPattern === 'diagonal-reverse') {
-                    // 右上から左下へ斜め - ジグザグで全体をカバー
-                    autoScratchX += stepSize * 0.7 * autoScratchDirection;
+                    // 右上から左下へ斜め - 平行な斜め線を順番に
+                    autoScratchX -= stepSize * 0.7;
                     autoScratchY += stepSize * 0.7;
 
-                    // 下端に達したら上に戻って左にずれる
-                    if (autoScratchY >= canvas.height) {
-                        autoScratchY = 0;
+                    // 左端または下端に達したら次の平行線へ
+                    if (autoScratchX <= 0 || autoScratchY >= canvas.height) {
                         autoScratchOffset += stepSize;
-                        autoScratchX = canvas.width - autoScratchOffset;
 
-                        // 左端を超えたらリセット
-                        if (autoScratchOffset >= canvas.width) {
-                            autoScratchOffset = 0;
+                        // まず右端を下に移動
+                        if (autoScratchOffset < canvas.height) {
                             autoScratchX = canvas.width;
+                            autoScratchY = autoScratchOffset;
                         }
-                    }
-
-                    // 左端または右端に達したら方向転換
-                    if (autoScratchX <= 0) {
-                        autoScratchX = 0;
-                        autoScratchDirection = 1;
-                    } else if (autoScratchX >= canvas.width) {
-                        autoScratchX = canvas.width;
-                        autoScratchDirection = -1;
+                        // 次に上端を左に移動
+                        else {
+                            const xOffset = autoScratchOffset - canvas.height;
+                            if (xOffset < canvas.width) {
+                                autoScratchX = canvas.width - xOffset;
+                                autoScratchY = 0;
+                            } else {
+                                // 全て完了したらリセット
+                                autoScratchOffset = 0;
+                                autoScratchX = canvas.width;
+                                autoScratchY = 0;
+                            }
+                        }
                     }
                 } else if (autoScratchPattern === 'spiral') {
                     // うずまき（中心から外へ）- スピードアップ
@@ -2045,7 +2051,7 @@
 
         // オートスクラッチの位置をリセット（継続する場合）
         function resetAutoScratchPosition() {
-            selectRandomPattern();
+            selectNextPattern();
         }
 
         // オートスクラッチボタン
