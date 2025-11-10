@@ -1816,6 +1816,59 @@
             endingScreen.classList.add('show');
         }
 
+        // 削り残しエリアを検出（グリッド単位でチェック）
+        function findUnscatchedArea() {
+            if (!scratchedCanvas) return null;
+
+            const scratchCtx = scratchedCanvas.getContext('2d');
+            const gridSize = brushSize; // ブラシサイズ単位でチェック
+            const cols = Math.ceil(canvas.width / gridSize);
+            const rows = Math.ceil(canvas.height / gridSize);
+
+            // ランダムな順序でチェック（全体を均等にカバーするため）
+            const positions = [];
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    positions.push({ row, col });
+                }
+            }
+
+            // シャッフル
+            for (let i = positions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [positions[i], positions[j]] = [positions[j], positions[i]];
+            }
+
+            // 削り残しがあるグリッドを探す
+            for (const pos of positions) {
+                const x = pos.col * gridSize;
+                const y = pos.row * gridSize;
+                const w = Math.min(gridSize, canvas.width - x);
+                const h = Math.min(gridSize, canvas.height - y);
+
+                const imageData = scratchCtx.getImageData(x, y, w, h);
+                const pixels = imageData.data;
+
+                // このグリッド内に不透明なピクセルがあるかチェック
+                let opaqueCount = 0;
+                for (let i = 3; i < pixels.length; i += 4) {
+                    if (pixels[i] >= 128) {
+                        opaqueCount++;
+                    }
+                }
+
+                // 30%以上が不透明なら削り残しとして返す
+                if (opaqueCount / (pixels.length / 4) > 0.3) {
+                    return {
+                        x: x + w / 2,
+                        y: y + h / 2
+                    };
+                }
+            }
+
+            return null; // 削り残しなし
+        }
+
         // パターンをランダムに選択
         function selectRandomPattern() {
             const patterns = ['zigzag', 'vertical', 'diagonal', 'circle', 'random'];
@@ -1855,6 +1908,30 @@
                 if (!topImage || !bottomImage || !scratchedCanvas) {
                     stopAutoScratch();
                     return;
+                }
+
+                // 20ステップごとに削り残しをチェック
+                if (autoScratchStepCount % 20 === 0) {
+                    const unscratched = findUnscatchedArea();
+                    if (unscratched) {
+                        // 削り残しに向かって移動
+                        const dx = unscratched.x - autoScratchX;
+                        const dy = unscratched.y - autoScratchY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance > brushSize) {
+                            // 削り残しに向かって直線的に移動
+                            const prevX = autoScratchX;
+                            const prevY = autoScratchY;
+                            const moveSpeed = brushSize * 0.8;
+                            autoScratchX += (dx / distance) * moveSpeed;
+                            autoScratchY += (dy / distance) * moveSpeed;
+                            scratchLine(prevX, prevY, autoScratchX, autoScratchY);
+                            autoScratchStepCount++;
+                            updateProgress();
+                            return;
+                        }
+                    }
                 }
 
                 // 100ステップごとにパターンを切り替え
