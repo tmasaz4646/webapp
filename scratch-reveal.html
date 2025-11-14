@@ -1750,7 +1750,7 @@
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
             ctx.stroke();
-            
+
             ctx.globalCompositeOperation = 'destination-over';
             ctx.drawImage(bottomImage, 0, 0, canvas.width, canvas.height);
             ctx.globalCompositeOperation = 'source-over';
@@ -1765,6 +1765,41 @@
             scratchCtx.moveTo(x1, y1);
             scratchCtx.lineTo(x2, y2);
             scratchCtx.stroke();
+            scratchCtx.globalCompositeOperation = 'source-over';
+        }
+
+        // ワイパー用：段階的に透明度を上げる削り関数（一度の通過で30%削る）
+        function scratchLineGradual(x1, y1, x2, y2, alpha = 0.3) {
+            if (!topImage || !bottomImage) return;
+
+            // メインキャンバスに描画
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.globalAlpha = alpha;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = brushSize;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.drawImage(bottomImage, 0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+
+            // 削った部分を記録（進捗計算用）
+            const scratchCtx = scratchedCanvas.getContext('2d');
+            scratchCtx.globalCompositeOperation = 'destination-out';
+            scratchCtx.globalAlpha = alpha;
+            scratchCtx.lineCap = 'round';
+            scratchCtx.lineJoin = 'round';
+            scratchCtx.lineWidth = brushSize;
+            scratchCtx.beginPath();
+            scratchCtx.moveTo(x1, y1);
+            scratchCtx.lineTo(x2, y2);
+            scratchCtx.stroke();
+            scratchCtx.globalAlpha = 1.0;
             scratchCtx.globalCompositeOperation = 'source-over';
         }
 
@@ -1977,6 +2012,7 @@
                     }
                 } else if (autoScratchPattern === 'wiper') {
                     // ワイパー - 画面下部を中心に扇形に左右往復（さっさっさっ）
+                    // 段階的に透明になる（一度の通過で30%削る）
                     const angleSpeed = 0.08; // 高速で動く
                     autoScratchAngle += angleSpeed * autoScratchDirection;
 
@@ -2002,7 +2038,7 @@
                     const tipY = centerY - Math.cos(autoScratchAngle) * wiperLength;
 
                     // ワイパーの軌跡を描画（中心から先端まで）
-                    // 複数のポイントで線を引いて幅広く削る
+                    // 段階的透明度削り：一度の通過で30%削る
                     const segments = 10;
                     for (let i = 0; i < segments; i++) {
                         const t = i / segments;
@@ -2013,14 +2049,14 @@
                             autoScratchX = x;
                             autoScratchY = y;
                         } else {
-                            scratchLine(autoScratchX, autoScratchY, x, y);
+                            scratchLineGradual(autoScratchX, autoScratchY, x, y, 0.3);
                             autoScratchX = x;
                             autoScratchY = y;
                         }
                     }
 
                     // 最後に先端まで
-                    scratchLine(autoScratchX, autoScratchY, tipX, tipY);
+                    scratchLineGradual(autoScratchX, autoScratchY, tipX, tipY, 0.3);
                     autoScratchX = tipX;
                     autoScratchY = tipY;
                 }
@@ -2159,8 +2195,9 @@
            - 画面下部を中心に扇形に動く車のワイパー風
            - 左右に高速で往復（さっさっさっ）
            - 約144度（左右72度ずつ）の範囲を素早く行き来
-           - ワイパーが通過した軌跡を削る
-           - 何度も同じ場所を通って確実に削る
+           - 段階的透明度：一度の通過で30%削る
+           - 何度も同じ場所を通ることで徐々に透明になる
+           - 100% → 70% → 40% → 10% → 0%と段階的に後ろの画像が見える
 
         全てのパターンは:
         - ブラシサイズに応じた適切なスピードで動作
