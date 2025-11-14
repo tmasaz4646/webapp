@@ -1826,8 +1826,8 @@
             progressFill.style.width = percentage + '%';
             progressText.textContent = `削った割合: ${percentage}%`;
 
-            // オートスクラッチモード: 100%（ワイパーは97%）で自動的に次のステージへ
-            const completeThreshold = (autoScratchPattern === 'wiper') ? 97 : 100;
+            // オートスクラッチモード: 100%（ワイパーは95%）で自動的に次のステージへ
+            const completeThreshold = (autoScratchPattern === 'wiper') ? 95 : 100;
             if (autoScratching && percentage >= completeThreshold && !isTransitioning) {
                 isTransitioning = true;
                 resetAutoScratchPosition();
