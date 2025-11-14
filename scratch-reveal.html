@@ -1811,8 +1811,11 @@
             const pixels = imageData.data;
             let transparentPixels = 0;
 
+            // ワイパーモードは段階的透明度なので、より低い基準値を使用
+            const alphaThreshold = (autoScratchPattern === 'wiper') ? 50 : 128;
+
             for (let i = 3; i < pixels.length; i += 4) {
-                if (pixels[i] < 128) {
+                if (pixels[i] < alphaThreshold) {
                     transparentPixels++;
                 }
             }
@@ -1823,8 +1826,9 @@
             progressFill.style.width = percentage + '%';
             progressText.textContent = `削った割合: ${percentage}%`;
 
-            // オートスクラッチモード: 100%で自動的に次のステージへ
-            if (autoScratching && percentage >= 100 && !isTransitioning) {
+            // オートスクラッチモード: 100%（ワイパーは98%）で自動的に次のステージへ
+            const completeThreshold = (autoScratchPattern === 'wiper') ? 98 : 100;
+            if (autoScratching && percentage >= completeThreshold && !isTransitioning) {
                 isTransitioning = true;
                 resetAutoScratchPosition();
                 setTimeout(() => {
