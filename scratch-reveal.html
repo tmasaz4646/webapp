@@ -513,7 +513,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎨 画像スクラッチゲーム</h1>
+        <h1 id="appTitle">🎨 画像スクラッチゲーム</h1>
         
         <div class="mode-selector">
             <button class="mode-btn active" id="playModeBtn">🎮 プレイモード</button>
@@ -529,8 +529,8 @@
 
         <div class="brush-controls">
             <label>ブラシサイズ:</label>
-            <input type="range" id="brushSize" min="10" max="100" value="60">
-            <span id="brushValue">60px</span>
+            <input type="range" id="brushSize" min="10" max="100" value="70">
+            <span id="brushValue">70px</span>
             <button id="resetBtn">リセット</button>
             <button id="autoScratchBtn">オートスクラッチ開始</button>
             <button id="backToStage1Btn">ステージ1に戻る</button>
@@ -631,6 +631,9 @@
         // ========== Translation System ==========
         const translations = {
             ja: {
+                // App title
+                appTitle: '🎨 画像スクラッチゲーム',
+
                 // Mode buttons
                 playMode: '🎮 プレイモード',
                 editMode: '✏️ 編集モード',
@@ -696,6 +699,9 @@
                 ]
             },
             en: {
+                // App title
+                appTitle: '🎨 Scratch Reveal Game',
+
                 // Mode buttons
                 playMode: '🎮 Play Mode',
                 editMode: '✏️ Edit Mode',
@@ -785,6 +791,9 @@
 
         // Update all text content when language changes
         function updateAllText() {
+            // Update app title
+            document.getElementById('appTitle').textContent = t('appTitle');
+
             // Update mode buttons
             document.getElementById('playModeBtn').textContent = t('playMode');
             document.getElementById('editModeBtn').textContent = t('editMode');
@@ -922,7 +931,7 @@
         let bottomImage = null;
         let topImage = null;
         let isDrawing = false;
-        let brushSize = 60;
+        let brushSize = 70;
         let lastX = 0;
         let lastY = 0;
         let stageCleared = false;
