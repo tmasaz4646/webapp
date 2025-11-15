@@ -311,7 +311,11 @@
             display: block;
             max-width: 100%;
             height: auto;
-            cursor: crosshair;
+            cursor: grab;
+        }
+
+        canvas.scratching {
+            cursor: grabbing;
         }
 
         .info {
@@ -517,7 +521,7 @@
         </div>
         
         <div class="stage-info">
-            <span id="stageNumber">ステージ 1 / 100</span>
+            <span id="stageNumber">ステージ 1 / 35</span>
         </div>
 
         <div class="play-stage-selector" id="playStageSelector"></div>
@@ -527,6 +531,7 @@
             <input type="range" id="brushSize" min="10" max="100" value="60">
             <span id="brushValue">60px</span>
             <button id="resetBtn">リセット</button>
+            <button id="autoScratchBtn">オートスクラッチ開始</button>
             <button id="backToStage1Btn">ステージ1に戻る</button>
         </div>
 
@@ -564,6 +569,7 @@
 
             <button class="save-btn" id="saveStageBtn">このステージを保存</button>
             <button class="save-btn" id="resetStageBtn" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">このステージをリセット</button>
+            <button class="save-btn" id="resetFromCurrentBtn" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);">このステージ以降をリセット</button>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
                 <button class="save-btn" id="exportDataBtn" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">💾 データをエクスポート</button>
@@ -599,7 +605,7 @@
         <div class="ending-screen" id="endingScreen">
             <h2>🎉 おめでとうございます！ 🎉</h2>
             <p>
-                全100ステージクリア！<br>
+                全35ステージクリア！<br>
                 あなたの削りスキルは最高です！<br><br>
                 隠れていた素敵な画像たちを<br>
                 全て見つけることができましたね。<br><br>
@@ -626,6 +632,7 @@
         const brushSizeInput = document.getElementById('brushSize');
         const brushValue = document.getElementById('brushValue');
         const resetBtn = document.getElementById('resetBtn');
+        const autoScratchBtn = document.getElementById('autoScratchBtn');
         const backToStage1Btn = document.getElementById('backToStage1Btn');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
@@ -647,6 +654,7 @@
         const commentInput = document.getElementById('commentInput');
         const saveStageBtn = document.getElementById('saveStageBtn');
         const resetStageBtn = document.getElementById('resetStageBtn');
+        const resetFromCurrentBtn = document.getElementById('resetFromCurrentBtn');
         const customConfirm = document.getElementById('customConfirm');
         const confirmMessage = document.getElementById('confirmMessage');
         const confirmYes = document.getElementById('confirmYes');
@@ -671,30 +679,28 @@
         let stageCleared = false;
         let scratchedCanvas = null; // 削った状態を保存するキャンバス
         let confirmCallback = null; // 確認ダイアログのコールバック
+        let autoScratching = false; // オートスクラッチ中かどうか
+        let autoScratchInterval = null; // オートスクラッチのインターバル
+        let autoScratchY = 0; // オートスクラッチの現在のY位置
+        let autoScratchX = 0; // オートスクラッチの現在のX位置
+        let autoScratchDirection = 1; // オートスクラッチの方向（1: 右/上, -1: 左/下）
+        let isTransitioning = false; // ステージ遷移中かどうか
+        let autoScratchPattern = 'horizontal-from-top'; // 現在のパターン
+        let autoScratchOffset = 0; // 斜めパターン用のオフセット
+        let autoScratchAngle = 0; // うずまき用の角度
+        let autoScratchRadius = 0; // うずまき用の半径
 
-        // デフォルトステージデータ（100ステージ）
+        // デフォルトステージデータ（35ステージ）
         function generateDefaultStages() {
             const colors = ['#FF6B6B', '#95E1D3', '#AA96DA', '#A8D8EA', '#FFD93D', '#F7B731', '#FF6348', '#A29BFE', '#55E6C1', '#26C6DA',
                            '#E74C3C', '#3498DB', '#9B59B6', '#1ABC9C', '#F39C12', '#2ECC71', '#E67E22', '#16A085', '#C0392B', '#8E44AD',
                            '#FF5733', '#33FF57', '#3357FF', '#F333FF', '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845',
-                           '#FF6F91', '#FFC75F', '#845EC2', '#D65DB1', '#FF9671', '#FFC75F', '#F9F871', '#00C9A7', '#C34A36', '#4D908E',
-                           '#577590', '#43AA8B', '#90BE6D', '#F9C74F', '#F8961E', '#F3722C', '#F94144', '#277DA1', '#4D908E', '#F9844A',
-                           '#F9C74F', '#90BE6D', '#43AA8B', '#577590', '#277DA1', '#4ECDC4', '#FF6B6B', '#95E1D3', '#AA96DA', '#A8D8EA',
-                           '#FFD93D', '#F7B731', '#FF6348', '#A29BFE', '#55E6C1', '#26C6DA', '#E74C3C', '#3498DB', '#9B59B6', '#1ABC9C',
-                           '#F39C12', '#2ECC71', '#E67E22', '#16A085', '#C0392B', '#8E44AD', '#FF5733', '#33FF57', '#3357FF', '#F333FF',
-                           '#33FFF3', '#FFC300', '#DAF7A6', '#C70039', '#900C3F', '#581845', '#FF6F91', '#FFC75F', '#845EC2', '#D65DB1',
-                           '#FF9671', '#FFC75F', '#F9F871', '#00C9A7', '#C34A36', '#4D908E', '#577590', '#43AA8B', '#90BE6D', '#F9C74F'];
+                           '#FF6F91', '#FFC75F', '#845EC2', '#D65DB1', '#FF9671'];
 
             const emojis = ['🌸', '☀️', '🌙', '⭐', '🌈', '🎨', '🎵', '💎', '🏆', '🎁',
-                          '🎺', '🏻', '🌹', '🌷', '🏼', '🍀', '🌿', '🍄', '🌾', '🌴',
-                          '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍑', '🍒', '🍍',
-                          '⚽', '🏀', '⚾', '🎾', '🏐', '🏈', '🏉', '🎱', '🏏', '🏸',
-                          '🎯', '🎪', '🎭', '🎬', '🎤', '🎧', '🎼', '🎹', '🎺', '🏻',
-                          '🚗', '🚕', '🚙', '🚌', '🚎', '🏎', '🚓', '🚑', '🚒', '🚐',
-                          '✈️', '🚀', '🛼', '🚁', '🛠', '⛵', '🚤', '🛬', '⛴', '🚢',
-                          '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨', '🏩', '🏪',
-                          '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣', '💔', '❤️',
-                          '🌟', '✨', '💫', '🌠', '⚡', '🔥', '💧', '🌊', '🍂', '🍁'];
+                          '🌹', '🌷', '🍀', '🌿', '🍄', '🌾', '🌴', '🍎', '🍊', '🍋',
+                          '🍌', '🍉', '🍇', '🍓', '🍑', '🍒', '🍍', '⚽', '🏀', '🎯',
+                          '🎪', '🎭', '🎬', '🎤', '🎧'];
 
             const comments = [
                 '桜が咲きました！\n春の訪れですね', '太陽が輝いています！\n素敵な一日になりそう', '月が美しいですね\n静かな夜です',
@@ -703,39 +709,19 @@
                 'プレゼントです！\nおめでとうございます！', '美しい花が咲いています\n素晴らしい景色ですね', '明るい光が差し込んでいます\n希望を感じます',
                 '新しい発見がありました！\nワクワクしますね', '素晴らしい景色です\n心が癒されます', '温かい気持ちになります\n幸せですね',
                 'ラッキーアイテムゲット！\n運気上昇中です', '新たな冒険の始まりです\n楽しみですね', 'すごい発見です！\n感動しました',
-                '美しい瞬間です\n大切にしたいですね', 'おめでとうございます！\n素晴らしい成果です',
-                'クリエイティブな発見！\nインスピレーション湧きます', '素敵な音色ですね\n心地よいリズムです', '輝く宝物を見つけました\n価値ある発見です',
-                '勝利の証です\n努力が実りました', '特別な贈り物ですね\nありがとうございます', '自然の美しさに\n感動しますね',
-                '穏やかな時間が流れます\nリラックスできます', 'ポジティブな気持ちに\nなれますね', '癒しの時間です\nゆっくりしましょう',
-                '前向きな気持ちになります\n頑張れそうです', '素晴らしい一日になりそう\nワクワクします', '新しい挑戦が始まります\n期待が膨らみます',
-                '美味しそうですね！\n食べたくなります', '爽やかな気分です\nリフレッシュできました', '甘い香りがします\n幸せな気持ちです',
-                'スポーツの楽しさを\n感じますね', 'アクティブに動きたく\nなりますね', 'エネルギッシュな気分\nになります',
-                'ゲーム感覚で楽しめます\n面白いですね', 'エンターテイメントの世界へ\nようこそ', '芸術的な美しさですね\n感性が磨かれます',
-                '音楽の力を感じます\n心が躍ります', '乗り物でどこへ行こう\nワクワクします', 'スピード感がありますね\nスリル満点です',
-                '旅立ちの時です\n新しい場所へ', '空を飛ぶ夢が叶います\n自由を感じます', '未来的なイメージですね\n想像が広がります',
-                '帰る場所があります\n安心感がありますね', '建物の美しさに\n目を奪われます', '都会的な雰囲気ですね\nモダンな感じです',
-                '愛が溢れています\n温かい気持ちです', 'ハートフルな瞬間\n大切にしたいですね', 'ロマンチックな雰囲気\n素敵ですね',
-                '輝きが増しています\nキラキラ光ります', '魔法のような瞬間\n不思議な気分です', '流れ星に願いを\n夢が叶いそうです',
-                'パワーアップしました\nエネルギーを感じます', '情熱的な気持ち\n燃え上がります', '清らかな水のように\n澄んだ気持ちです',
-                '大きな波が来ます\nダイナミックですね', '季節の移り変わり\n美しいですね', '自然の恵みに感謝\n豊かな気持ちです',
-                'ゴールまであと少し！\n頑張りましょう', '新たなステージへ\n進みましょう', 'あなたは輝いています\n素晴らしいです',
-                '達成感があります\n喜びを感じます', '幸運が訪れました\nツイています', 'ポジティブパワー全開\n元気が出ます',
-                '奇跡的な出会い\n運命を感じます', '心が温まります\n優しい気持ちです', 'インスピレーション\n湧き上がります',
-                '創造力が高まります\nアイデア満載です', 'チャンスが来ました\n掴み取りましょう', '楽しい時間です\n笑顔になれます',
-                'ハッピーな気分\n幸せいっぱいです', '素敵な出会いがあります\n嬉しいですね', 'ドリームが叶います\n夢のようです',
-                'ファンタスティック！\n素晴らしいです', 'ワンダフルな瞬間\n感動しました', 'エクセレント！\n最高です',
-                'パーフェクト！\n完璧ですね', 'アメージング！\n驚きました', 'ビューティフル！\n美しいです',
-                'グレート！\n素晴らしい', 'スーパー！\n凄いです', 'ブリリアント！\n輝いています',
-                'マジカル！\n魔法のようです', 'スペシャル！\n特別です', 'ユニーク！\n個性的ですね',
-                'ハーモニー！\n調和しています', 'ピースフル！\n平和です', 'ジョイフル！\n喜びに満ちています',
-                'チアフル！\n元気が出ます', 'ホープフル！\n希望があります', 'ブレス！\n祝福されています'
+                '美しい瞬間です\n大切にしたいですね', 'おめでとうございます！\n素晴らしい成果です', 'クリエイティブな発見！\nインスピレーション湧きます',
+                '素敵な音色ですね\n心地よいリズムです', '輝く宝物を見つけました\n価値ある発見です', '勝利の証です\n努力が実りました',
+                '特別な贈り物ですね\nありがとうございます', '自然の美しさに\n感動しますね', '穏やかな時間が流れます\nリラックスできます',
+                'ポジティブな気持ちに\nなれますね', '癒しの時間です\nゆっくりしましょう', '前向きな気持ちになります\n頑張れそうです',
+                'エンターテイメントの世界へ\nようこそ', '芸術的な美しさですね\n感性が磨かれます', '音楽の力を感じます\n心が躍ります',
+                '全ステージクリア！\n最高です！', '全てをやり遂げました！\nおめでとうございます！'
             ];
 
             const stages = [];
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 35; i++) {
                 stages.push({
                     topColor: colors[i],
-                    bottomColor: colors[(i + 50) % 100],
+                    bottomColor: colors[(i + 17) % 35],
                     topText: '？',
                     bottomText: emojis[i],
                     comment: comments[i],
@@ -787,10 +773,16 @@
             const saved = localStorage.getItem('scratchGameStages');
             if (saved) {
                 const loadedStages = JSON.parse(saved);
-                // 100ステージ未満の場合は100ステージに拡張
-                if (loadedStages.length < 100) {
-                    console.log(`ステージ数を${loadedStages.length}から100に拡張します`);
-                    while (loadedStages.length < 100) {
+                // 35ステージより多い場合は35に切り詰め
+                if (loadedStages.length > 35) {
+                    console.log(`ステージ数を${loadedStages.length}から35に削減します`);
+                    loadedStages.splice(35);
+                    localStorage.setItem('scratchGameStages', JSON.stringify(loadedStages));
+                }
+                // 35ステージ未満の場合は35ステージに拡張
+                if (loadedStages.length < 35) {
+                    console.log(`ステージ数を${loadedStages.length}から35に拡張します`);
+                    while (loadedStages.length < 35) {
                         const index = loadedStages.length;
                         loadedStages.push(JSON.parse(JSON.stringify(defaultStages[index])));
                     }
@@ -826,7 +818,7 @@
         }
 
         // 画像を圧縮する関数
-        function compressImage(imageDataUrl, maxWidth = 600, quality = 0.5) {
+        function compressImage(imageDataUrl, maxWidth = 800, quality = 0.7) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
@@ -846,7 +838,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // JPEG形式で圧縮（品質0.5で容量節約）
+                    // JPEG形式で圧縮（品質0.7）
                     resolve(canvas.toDataURL('image/jpeg', quality));
                 };
                 img.src = imageDataUrl;
@@ -867,6 +859,7 @@
 
         function selectPlayStage(index) {
             if (index === currentStage) return;
+            stopAutoScratch(); // オートスクラッチを停止
             currentStage = index;
             updatePlayStageButtons();
             loadStage(index);
@@ -881,6 +874,7 @@
 
         // モード切り替え
         playModeBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
             playModeBtn.classList.add('active');
             editModeBtn.classList.remove('active');
             editMode.classList.remove('show');
@@ -900,6 +894,7 @@
         });
 
         editModeBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
             editModeBtn.classList.add('active');
             playModeBtn.classList.remove('active');
             editMode.classList.add('show');
@@ -962,8 +957,8 @@
 
             const sortedFiles = sortFilesByDate(files);
 
-            // 容量チェック: 1枚あたり約50KB（圧縮後）として概算
-            const estimatedSizePerImage = 50 * 1024; // 50KB
+            // 容量チェック: 1枚あたり約70KB（圧縮後）として概算
+            const estimatedSizePerImage = 70 * 1024; // 70KB
             const estimatedTotalSize = sortedFiles.length * estimatedSizePerImage;
             const availableStorage = getAvailableStorage();
 
@@ -1054,6 +1049,38 @@
             }
         }
 
+        // データを自動エクスポートする関数
+        function autoExportData(partNumber, startStage, endStage) {
+            try {
+                const dataToExport = {
+                    version: '1.0',
+                    exportDate: new Date().toISOString(),
+                    partNumber: partNumber,
+                    stageRange: `${startStage + 1}-${endStage + 1}`,
+                    stages: stages
+                };
+
+                const jsonString = JSON.stringify(dataToExport, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const filename = `scratch-game-part${partNumber}-${new Date().toISOString().split('T')[0]}.json`;
+
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                console.log(`Part ${partNumber} exported: ${filename}`);
+                return true;
+            } catch (e) {
+                console.error('Auto export failed:', e);
+                return false;
+            }
+        }
+
         // ペア画像を一括処理（1枚目→削る、2枚目→見せたい、3枚目→削る...）
         async function handlePairImages(files) {
             if (files.length === 0) return;
@@ -1062,27 +1089,11 @@
             const pairCount = Math.floor(sortedFiles.length / 2);
             const remainingFiles = sortedFiles.length % 2;
 
-            // 容量チェック: ペア（2枚）あたり約100KB（圧縮後）として概算
-            const estimatedSizePerPair = 100 * 1024; // 100KB
-            const estimatedTotalSize = pairCount * estimatedSizePerPair;
-            const availableStorage = getAvailableStorage();
-
-            if (estimatedTotalSize > availableStorage) {
-                alert(
-                    `⚠️ 容量不足の可能性があります\n\n` +
-                    `登録しようとするペア数: ${pairCount}組（${pairCount * 2}枚）\n` +
-                    `推定必要容量: ${Math.round(estimatedTotalSize / 1024)}KB\n` +
-                    `利用可能容量: ${Math.round(availableStorage / 1024)}KB\n\n` +
-                    `画像数を減らすか、既存のステージ画像を削除してください。`
-                );
-                return;
-            }
-
             const confirmed = await showConfirm(
                 `${sortedFiles.length}個の画像を作成日順にペアで一括登録します。\n` +
-                `${pairCount}組のペア（${pairCount * 2}枚）がステージ${currentEditStage + 1}から登録されます。\n` +
+                `${pairCount}組のペア（${pairCount * 2}枚）をステージ${currentEditStage + 1}から登録します。\n` +
                 (remainingFiles > 0 ? `※ 残り${remainingFiles}枚は登録されません\n` : '') +
-                `推定容量: ${Math.round(estimatedTotalSize / 1024)}KB\n` +
+                `\n容量が満杯になった場合は自動的にエクスポートして続行します。\n` +
                 `よろしいですか？`
             );
 
@@ -1090,12 +1101,27 @@
 
             let processedPairs = 0;
             let failedCount = 0;
+            let exportCount = 0;
+            let partStartStage = currentEditStage;
 
             for (let i = 0; i < sortedFiles.length - 1; i += 2) {
-                const targetStage = currentEditStage + processedPairs;
+                const targetStage = processedPairs; // 常にステージ0から詰める
                 if (targetStage >= stages.length) {
-                    alert(`ステージ${targetStage + 1}は存在しないため、残りの画像をスキップしました。`);
-                    break;
+                    // ステージ上限に達したので、現在のデータをエクスポート
+                    exportCount++;
+                    autoExportData(exportCount, partStartStage, stages.length - 1);
+
+                    // 全ステージをリセット
+                    for (let j = 0; j < stages.length; j++) {
+                        stages[j] = JSON.parse(JSON.stringify(defaultStages[j]));
+                    }
+                    saveStages();
+
+                    // 次のパートを開始
+                    processedPairs = 0;
+                    partStartStage = 0;
+                    i -= 2; // このペアをもう一度処理
+                    continue;
                 }
 
                 try {
@@ -1123,45 +1149,68 @@
                     stages[targetStage].topImage = topCompressed;
                     stages[targetStage].bottomImage = bottomCompressed;
 
-                    processedPairs++;
+                    // 保存を試みる
+                    try {
+                        saveStages();
+                        processedPairs++;
+                    } catch (saveError) {
+                        // 容量エラーの場合
+                        if (saveError.name === 'QuotaExceededError') {
+                            // 直前のステージまでをエクスポート
+                            exportCount++;
+
+                            // 登録失敗した画像を削除
+                            stages[targetStage].topImage = null;
+                            stages[targetStage].bottomImage = null;
+                            saveStages();
+
+                            // エクスポート実行
+                            autoExportData(exportCount, partStartStage, targetStage - 1);
+
+                            // 全ステージをリセット
+                            for (let j = 0; j < stages.length; j++) {
+                                stages[j] = JSON.parse(JSON.stringify(defaultStages[j]));
+                            }
+                            saveStages();
+
+                            // 次のパートを開始
+                            processedPairs = 0;
+                            partStartStage = 0;
+                            i -= 2; // このペアをもう一度処理
+                        } else {
+                            throw saveError;
+                        }
+                    }
                 } catch (error) {
-                    console.error(`ペア ${processedPairs + 1} の処理に失敗:`, error);
+                    console.error(`ペア ${i/2 + 1} の処理に失敗:`, error);
                     failedCount++;
                 }
             }
 
-            // データを保存
-            try {
-                saveStages();
-                const currentSize = Math.round(getStorageSize() / 1024);
-                const availableSize = Math.round(getAvailableStorage() / 1024);
-                alert(
-                    `ペア一括登録が完了しました！\n` +
-                    `登録ペア数: ${processedPairs}組（${processedPairs * 2}枚）\n` +
-                    (failedCount > 0 ? `失敗: ${failedCount}組\n` : '') +
-                    (remainingFiles > 0 ? `未登録: ${remainingFiles}枚\n` : '') +
-                    `ステージ${currentEditStage + 1}〜${currentEditStage + processedPairs}に登録されました。\n\n` +
-                    `現在の使用容量: ${currentSize}KB\n` +
-                    `残り容量: ${availableSize}KB`
-                );
-                loadEditStage(currentEditStage);
-            } catch (e) {
-                if (e.name === 'QuotaExceededError') {
-                    const currentSize = Math.round(getStorageSize() / 1024);
-                    alert(
-                        `❌ 保存容量を超えました\n\n` +
-                        `現在の使用容量: ${currentSize}KB\n` +
-                        `処理済み: ${processedPairs}組（${processedPairs * 2}枚）\n\n` +
-                        `対策:\n` +
-                        `・登録する画像数を減らす\n` +
-                        `・既存のステージ画像を削除する\n` +
-                        `・データをエクスポートしてバックアップ後、\n` +
-                        `  不要なステージをリセットする`
-                    );
-                } else {
-                    alert('保存に失敗しました: ' + e.message);
-                }
+            // 最後のパートをエクスポート（画像が登録されている場合のみ）
+            if (processedPairs > 0) {
+                exportCount++;
+                autoExportData(exportCount, partStartStage, processedPairs - 1);
             }
+
+            // 完了メッセージ
+            const totalProcessed = Math.floor((sortedFiles.length - remainingFiles) / 2);
+            const currentSize = Math.round(getStorageSize() / 1024);
+            const availableSize = Math.round(getAvailableStorage() / 1024);
+
+            alert(
+                `ペア一括登録が完了しました！\n\n` +
+                `総処理ペア数: ${totalProcessed}組（${totalProcessed * 2}枚）\n` +
+                (failedCount > 0 ? `失敗: ${failedCount}組\n` : '') +
+                (remainingFiles > 0 ? `未登録: ${remainingFiles}枚\n` : '') +
+                `エクスポートファイル数: ${exportCount}個\n\n` +
+                `💾 ${exportCount}個のJSONファイルがダウンロードされました。\n` +
+                `各ファイルには35ステージ分のデータが含まれています。\n\n` +
+                `現在の使用容量: ${currentSize}KB\n` +
+                `残り容量: ${availableSize}KB`
+            );
+
+            loadEditStage(0);
         }
 
         // 画像アップロード（単一・複数対応）
@@ -1399,6 +1448,35 @@
             }
         });
 
+        // このステージ以降をリセット
+        resetFromCurrentBtn.addEventListener('click', async () => {
+            const stageCount = stages.length - currentEditStage;
+            const confirmed = await showConfirm(
+                `ステージ${currentEditStage + 1}以降（${stageCount}ステージ）をデフォルトに戻しますか？\n\n` +
+                `※ カスタム画像は全て削除され、初期状態に戻ります`
+            );
+            if (confirmed) {
+                // 現在のステージ以降を全てリセット
+                for (let i = currentEditStage; i < stages.length; i++) {
+                    stages[i] = JSON.parse(JSON.stringify(defaultStages[i]));
+                }
+                try {
+                    saveStages();
+                    const currentSize = Math.round(getStorageSize() / 1024);
+                    const availableSize = Math.round(getAvailableStorage() / 1024);
+                    alert(
+                        `ステージ${currentEditStage + 1}以降をリセットしました！\n\n` +
+                        `リセットしたステージ数: ${stageCount}\n\n` +
+                        `現在の使用容量: ${currentSize}KB\n` +
+                        `残り容量: ${availableSize}KB`
+                    );
+                    loadEditStage(currentEditStage);
+                } catch (e) {
+                    alert('リセットに失敗しました: ' + e.message);
+                }
+            }
+        });
+
         // データエクスポート
         exportDataBtn.addEventListener('click', () => {
             try {
@@ -1445,8 +1523,8 @@
                     throw new Error('無効なデータ形式です');
                 }
 
-                if (importedData.stages.length !== 100) {
-                    throw new Error('ステージ数が正しくありません（100ステージ必要です）');
+                if (importedData.stages.length !== 35) {
+                    throw new Error('ステージ数が正しくありません（35ステージ必要です）');
                 }
 
                 // 各ステージのデータ構造を検証
@@ -1558,7 +1636,7 @@
             scratchedCanvas = document.createElement('canvas');
             scratchedCanvas.width = canvas.width;
             scratchedCanvas.height = canvas.height;
-            const scratchCtx = scratchedCanvas.getContext('2d');
+            const scratchCtx = scratchedCanvas.getContext('2d', { willReadFrequently: true });
             scratchCtx.fillStyle = 'white';
             scratchCtx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1589,6 +1667,7 @@
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
             isDrawing = true;
+            canvas.classList.add('scratching');
             lastX = x;
             lastY = y;
             scratch(x, y);
@@ -1608,6 +1687,7 @@
 
         function startDrawing(e) {
             isDrawing = true;
+            canvas.classList.add('scratching');
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -1633,6 +1713,7 @@
         function stopDrawing() {
             if (isDrawing) {
                 isDrawing = false;
+                canvas.classList.remove('scratching');
                 updateProgress();
             }
         }
@@ -1669,7 +1750,7 @@
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
             ctx.stroke();
-            
+
             ctx.globalCompositeOperation = 'destination-over';
             ctx.drawImage(bottomImage, 0, 0, canvas.width, canvas.height);
             ctx.globalCompositeOperation = 'source-over';
@@ -1687,6 +1768,41 @@
             scratchCtx.globalCompositeOperation = 'source-over';
         }
 
+        // ワイパー用：段階的に透明度を上げる削り関数（一度の通過で12.5%削る＝8段階）
+        function scratchLineGradual(x1, y1, x2, y2, alpha = 0.125) {
+            if (!topImage || !bottomImage) return;
+
+            // メインキャンバスに描画
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.globalAlpha = alpha;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = brushSize;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.drawImage(bottomImage, 0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+
+            // 削った部分を記録（進捗計算用）
+            const scratchCtx = scratchedCanvas.getContext('2d');
+            scratchCtx.globalCompositeOperation = 'destination-out';
+            scratchCtx.globalAlpha = alpha;
+            scratchCtx.lineCap = 'round';
+            scratchCtx.lineJoin = 'round';
+            scratchCtx.lineWidth = brushSize;
+            scratchCtx.beginPath();
+            scratchCtx.moveTo(x1, y1);
+            scratchCtx.lineTo(x2, y2);
+            scratchCtx.stroke();
+            scratchCtx.globalAlpha = 1.0;
+            scratchCtx.globalCompositeOperation = 'source-over';
+        }
+
         function updateProgress() {
             if (!scratchedCanvas) return;
 
@@ -1694,21 +1810,36 @@
             const imageData = scratchCtx.getImageData(0, 0, scratchedCanvas.width, scratchedCanvas.height);
             const pixels = imageData.data;
             let transparentPixels = 0;
-            
+
+            // ワイパーモードは段階的透明度なので、より低い基準値を使用
+            const alphaThreshold = (autoScratchPattern === 'wiper') ? 50 : 128;
+
             for (let i = 3; i < pixels.length; i += 4) {
-                if (pixels[i] < 128) {
+                if (pixels[i] < alphaThreshold) {
                     transparentPixels++;
                 }
             }
-            
+
             const totalPixels = scratchedCanvas.width * scratchedCanvas.height;
             const percentage = Math.round((transparentPixels / totalPixels) * 100);
-            
+
             progressFill.style.width = percentage + '%';
             progressText.textContent = `削った割合: ${percentage}%`;
 
-            // 60%でメッセージ表示してクリア状態に
-            if (percentage >= 60 && !stageCleared) {
+            // オートスクラッチモード: 100%（ワイパーは95%）で自動的に次のステージへ
+            const completeThreshold = (autoScratchPattern === 'wiper') ? 95 : 100;
+            if (autoScratching && percentage >= completeThreshold && !isTransitioning) {
+                isTransitioning = true;
+                resetAutoScratchPosition();
+                setTimeout(() => {
+                    loadStage(currentStage + 1);
+                    isTransitioning = false;
+                }, 500);
+                return;
+            }
+
+            // 通常モード: 60%でメッセージ表示してクリア状態に
+            if (!autoScratching && percentage >= 60 && !stageCleared) {
                 stageCleared = true;
                 showComment();
             }
@@ -1725,13 +1856,261 @@
             endingScreen.classList.add('show');
         }
 
+        // パターンをランダムに選択（1ステージ1パターン）
+        function selectRandomPattern() {
+            const patterns = [
+                'horizontal-from-top',      // 左右の上から
+                'horizontal-from-bottom',   // 左右の下から
+                'vertical-from-left',       // 上下の左から
+                'vertical-from-right',      // 上下の右から
+                'spiral',                   // うずまき（中心から外へ）
+                'spiral-reverse',           // 逆うずまき（外から中心へ）
+                'wiper'                     // ワイパー（さっさっさっ）
+            ];
+            autoScratchPattern = patterns[Math.floor(Math.random() * patterns.length)];
+
+            // パターンに応じた初期化
+            autoScratchOffset = 0;
+
+            if (autoScratchPattern === 'horizontal-from-top') {
+                // 横ジグザグ、上から
+                autoScratchX = 0;
+                autoScratchY = 0;
+                autoScratchDirection = 1;
+            } else if (autoScratchPattern === 'horizontal-from-bottom') {
+                // 横ジグザグ、下から
+                autoScratchX = 0;
+                autoScratchY = canvas.height;
+                autoScratchDirection = 1;
+            } else if (autoScratchPattern === 'vertical-from-left') {
+                // 縦ジグザグ、左から
+                autoScratchX = 0;
+                autoScratchY = 0;
+                autoScratchDirection = 1;
+            } else if (autoScratchPattern === 'vertical-from-right') {
+                // 縦ジグザグ、右から
+                autoScratchX = canvas.width;
+                autoScratchY = 0;
+                autoScratchDirection = 1;
+            } else if (autoScratchPattern === 'spiral') {
+                // うずまき（中心から外へ）
+                autoScratchX = canvas.width / 2;
+                autoScratchY = canvas.height / 2;
+                autoScratchAngle = 0;
+                autoScratchRadius = 0;
+            } else if (autoScratchPattern === 'spiral-reverse') {
+                // 逆うずまき（外から中心へ）
+                autoScratchX = canvas.width / 2;
+                autoScratchY = canvas.height / 2;
+                autoScratchAngle = 0;
+                autoScratchRadius = Math.max(canvas.width, canvas.height) * 0.7;
+            } else if (autoScratchPattern === 'wiper') {
+                // ワイパー（さっさっさっ）
+                autoScratchAngle = -Math.PI * 0.4; // -72度から開始
+                autoScratchDirection = 1; // 1: 右へ, -1: 左へ
+                autoScratchX = canvas.width / 2; // 中心X（画面下部）
+                autoScratchY = canvas.height; // 中心Y（画面下部）
+            }
+        }
+
+        // オートスクラッチ開始
+        function startAutoScratch() {
+            if (autoScratching) return;
+
+            autoScratching = true;
+            selectRandomPattern();
+            autoScratchBtn.textContent = 'オートスクラッチ停止';
+
+            autoScratchInterval = setInterval(() => {
+                if (!topImage || !bottomImage || !scratchedCanvas) {
+                    stopAutoScratch();
+                    return;
+                }
+
+                const prevX = autoScratchX;
+                const prevY = autoScratchY;
+                const stepSize = brushSize * 0.5;
+
+                // パターンに応じた動き（1ステージ1パターン）
+                if (autoScratchPattern === 'horizontal-from-top') {
+                    // 横ジグザグ、上から下へ
+                    autoScratchX += stepSize * autoScratchDirection;
+                    if (autoScratchX >= canvas.width || autoScratchX <= 0) {
+                        autoScratchX = Math.max(0, Math.min(canvas.width, autoScratchX));
+                        autoScratchDirection *= -1;
+                        autoScratchY += stepSize;
+                    }
+                    if (autoScratchY >= canvas.height) {
+                        autoScratchY = 0;
+                        autoScratchX = 0;
+                        autoScratchDirection = 1;
+                    }
+                } else if (autoScratchPattern === 'horizontal-from-bottom') {
+                    // 横ジグザグ、下から上へ
+                    autoScratchX += stepSize * autoScratchDirection;
+                    if (autoScratchX >= canvas.width || autoScratchX <= 0) {
+                        autoScratchX = Math.max(0, Math.min(canvas.width, autoScratchX));
+                        autoScratchDirection *= -1;
+                        autoScratchY -= stepSize;
+                    }
+                    if (autoScratchY <= 0) {
+                        autoScratchY = canvas.height;
+                        autoScratchX = 0;
+                        autoScratchDirection = 1;
+                    }
+                } else if (autoScratchPattern === 'vertical-from-left') {
+                    // 縦ジグザグ、左から右へ
+                    autoScratchY += stepSize * autoScratchDirection;
+                    if (autoScratchY >= canvas.height || autoScratchY <= 0) {
+                        autoScratchY = Math.max(0, Math.min(canvas.height, autoScratchY));
+                        autoScratchDirection *= -1;
+                        autoScratchX += stepSize;
+                    }
+                    if (autoScratchX >= canvas.width) {
+                        autoScratchX = 0;
+                        autoScratchY = 0;
+                        autoScratchDirection = 1;
+                    }
+                } else if (autoScratchPattern === 'vertical-from-right') {
+                    // 縦ジグザグ、右から左へ
+                    autoScratchY += stepSize * autoScratchDirection;
+                    if (autoScratchY >= canvas.height || autoScratchY <= 0) {
+                        autoScratchY = Math.max(0, Math.min(canvas.height, autoScratchY));
+                        autoScratchDirection *= -1;
+                        autoScratchX -= stepSize;
+                    }
+                    if (autoScratchX <= 0) {
+                        autoScratchX = canvas.width;
+                        autoScratchY = 0;
+                        autoScratchDirection = 1;
+                    }
+                } else if (autoScratchPattern === 'spiral') {
+                    // うずまき（中心から外へ）- スピードアップ
+                    autoScratchRadius += 2.0;
+                    autoScratchAngle += 0.2;
+
+                    autoScratchX = canvas.width / 2 + Math.cos(autoScratchAngle) * autoScratchRadius;
+                    autoScratchY = canvas.height / 2 + Math.sin(autoScratchAngle) * autoScratchRadius;
+
+                    // 画面外に出たら中心に戻る
+                    if (autoScratchRadius > Math.max(canvas.width, canvas.height)) {
+                        autoScratchRadius = 0;
+                        autoScratchAngle = 0;
+                        autoScratchX = canvas.width / 2;
+                        autoScratchY = canvas.height / 2;
+                    }
+                } else if (autoScratchPattern === 'spiral-reverse') {
+                    // 逆うずまき（外から中心へ）- スピードアップ
+                    autoScratchRadius -= 2.0;
+                    autoScratchAngle += 0.2;
+
+                    autoScratchX = canvas.width / 2 + Math.cos(autoScratchAngle) * autoScratchRadius;
+                    autoScratchY = canvas.height / 2 + Math.sin(autoScratchAngle) * autoScratchRadius;
+
+                    // 中心に達したら外に戻る
+                    if (autoScratchRadius <= 0) {
+                        autoScratchRadius = Math.max(canvas.width, canvas.height) * 0.7;
+                        autoScratchAngle = 0;
+                        autoScratchX = canvas.width / 2 + autoScratchRadius;
+                        autoScratchY = canvas.height / 2;
+                    }
+                } else if (autoScratchPattern === 'wiper') {
+                    // ワイパー - 画面下部を中心に扇形に左右往復（さっさっさっ）
+                    // 段階的に透明になる（一度の通過で12.5%削る＝8段階）
+                    const angleSpeed = 0.08; // 高速で動く
+                    autoScratchAngle += angleSpeed * autoScratchDirection;
+
+                    const maxAngle = Math.PI * 0.4; // 約72度
+                    const minAngle = -Math.PI * 0.4; // 約-72度
+
+                    // 端に達したら折り返し
+                    if (autoScratchAngle >= maxAngle) {
+                        autoScratchAngle = maxAngle;
+                        autoScratchDirection = -1;
+                    } else if (autoScratchAngle <= minAngle) {
+                        autoScratchAngle = minAngle;
+                        autoScratchDirection = 1;
+                    }
+
+                    // ワイパーの長さ（画面の高さ＋α）
+                    const wiperLength = canvas.height * 1.2;
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height;
+
+                    // ワイパーの先端位置を計算
+                    const tipX = centerX + Math.sin(autoScratchAngle) * wiperLength;
+                    const tipY = centerY - Math.cos(autoScratchAngle) * wiperLength;
+
+                    // ワイパーの軌跡を描画（中心から先端まで）
+                    // 段階的透明度削り：一度の通過で12.5%削る（8段階）
+                    const segments = 10;
+                    for (let i = 0; i < segments; i++) {
+                        const t = i / segments;
+                        const x = centerX + Math.sin(autoScratchAngle) * wiperLength * t;
+                        const y = centerY - Math.cos(autoScratchAngle) * wiperLength * t;
+
+                        if (i === 0) {
+                            autoScratchX = x;
+                            autoScratchY = y;
+                        } else {
+                            scratchLineGradual(autoScratchX, autoScratchY, x, y, 0.125);
+                            autoScratchX = x;
+                            autoScratchY = y;
+                        }
+                    }
+
+                    // 最後に先端まで
+                    scratchLineGradual(autoScratchX, autoScratchY, tipX, tipY, 0.125);
+                    autoScratchX = tipX;
+                    autoScratchY = tipY;
+                }
+
+                // 線を描画（ワイパー以外）
+                if (autoScratchPattern !== 'wiper') {
+                    scratchLine(prevX, prevY, autoScratchX, autoScratchY);
+                }
+
+                updateProgress();
+            }, 20); // 高速化
+        }
+
+        // オートスクラッチ停止
+        function stopAutoScratch() {
+            if (!autoScratching) return;
+
+            autoScratching = false;
+            isTransitioning = false;
+            autoScratchBtn.textContent = 'オートスクラッチ開始';
+
+            if (autoScratchInterval) {
+                clearInterval(autoScratchInterval);
+                autoScratchInterval = null;
+            }
+        }
+
+        // オートスクラッチの位置をリセット（継続する場合）
+        function resetAutoScratchPosition() {
+            selectRandomPattern();
+        }
+
+        // オートスクラッチボタン
+        autoScratchBtn.addEventListener('click', () => {
+            if (autoScratching) {
+                stopAutoScratch();
+            } else {
+                startAutoScratch();
+            }
+        });
+
         resetBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
+
             if (topImage && bottomImage) {
                 // 削った状態をリセット
                 const scratchCtx = scratchedCanvas.getContext('2d');
                 scratchCtx.fillStyle = 'white';
                 scratchCtx.fillRect(0, 0, scratchedCanvas.width, scratchedCanvas.height);
-                
+
                 drawImages();
                 progressFill.style.width = '0%';
                 progressText.textContent = '削った割合: 0%';
@@ -1741,6 +2120,7 @@
         });
 
         backToStage1Btn.addEventListener('click', async () => {
+            stopAutoScratch(); // オートスクラッチを停止
             const confirmed = await showConfirm('ステージ1に戻りますか？');
             if (confirmed) {
                 // エンディング画面を非表示
@@ -1758,10 +2138,12 @@
         });
 
         nextBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
             loadStage(currentStage + 1);
         });
 
         replayBtn.addEventListener('click', () => {
+            stopAutoScratch(); // オートスクラッチを停止
             endingScreen.classList.remove('show');
             gameContent.classList.remove('hide');
             currentStage = 0;
@@ -1772,6 +2154,65 @@
         // ゲーム開始
         initPlayStageSelector();
         loadStage(0);
+
+        /*
+        ========================================
+        オートスクラッチパターン説明
+        ========================================
+
+        このゲームには7種類のオートスクラッチパターンがあり、
+        各ステージでランダムに1つが選ばれて実行されます。
+
+        1. horizontal-from-top (左右の上から)
+           - 画面上部から開始し、左右にジグザグに動きながら下へ進む
+           - 窓拭きのように左右に往復しながら徐々に下へ移動
+           - 削り残しが少ないよう、ブラシサイズの半分ずつ下にずれる
+
+        2. horizontal-from-bottom (左右の下から)
+           - 画面下部から開始し、左右にジグザグに動きながら上へ進む
+           - horizontal-from-topの逆方向版
+           - 下から上へ、窓拭き風に削る
+
+        3. vertical-from-left (上下の左から)
+           - 画面左側から開始し、上下にジグザグに動きながら右へ進む
+           - 縦方向の窓拭き動作
+           - 左から右へ徐々に進む
+
+        4. vertical-from-right (上下の右から)
+           - 画面右側から開始し、上下にジグザグに動きながら左へ進む
+           - vertical-from-leftの逆方向版
+           - 右から左へ、縦方向に削る
+
+        5. spiral (うずまき：中心から外へ)
+           - 画面中央から開始
+           - 渦巻き状に外側へ広がっていく
+           - 半径を徐々に大きくしながら回転
+           - 画面端に達したら中心に戻る
+
+        6. spiral-reverse (逆うずまき：外から中心へ)
+           - 画面外側の大きな円から開始
+           - 渦巻き状に中心へ向かって縮小
+           - 半径を徐々に小さくしながら回転
+           - 中心に達したら外側に戻る
+
+        7. wiper (ワイパー：さっさっさっ)
+           - 画面下部を中心に扇形に動く車のワイパー風
+           - 左右に高速で往復（さっさっさっ）
+           - 約144度（左右72度ずつ）の範囲を素早く行き来
+           - 段階的透明度：一度の通過で12.5%削る（8段階）
+           - 何度も同じ場所を通ることで徐々に透明になる
+           - 100% → 87.5% → 75% → 62.5% → 50% → 37.5% → 25% → 12.5% → 0%
+           - 8回の通過で完全に透明になり後ろの画像が見える
+           - 100%透明になったら自動的に次のステージへ進む
+
+        全てのパターンは:
+        - ブラシサイズに応じた適切なスピードで動作
+        - 削り残しを最小化するよう設計
+        - 100%削り終わったら自動的に次のステージへ進む
+        - 次のステージでは新しいパターンがランダムに選ばれる
+
+        ========================================
+        */
     </script>
 </body>
 </html>
