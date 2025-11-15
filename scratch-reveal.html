@@ -518,6 +518,7 @@
         <div class="mode-selector">
             <button class="mode-btn active" id="playModeBtn">🎮 プレイモード</button>
             <button class="mode-btn" id="editModeBtn">✏️ 編集モード</button>
+            <button class="mode-btn" id="langToggle" style="margin-left: auto;">🌐 EN</button>
         </div>
         
         <div class="stage-info">
@@ -627,6 +628,254 @@
     </div>
 
     <script>
+        // ========== Translation System ==========
+        const translations = {
+            ja: {
+                // Mode buttons
+                playMode: '🎮 プレイモード',
+                editMode: '✏️ 編集モード',
+
+                // Stage info
+                stage: 'ステージ',
+                stageOf: '/',
+
+                // Brush controls
+                brushSize: 'ブラシサイズ:',
+                autoScratchStart: 'オートスクラッチ開始',
+                autoScratchStop: 'オートスクラッチ停止',
+                reset: 'リセット',
+                backToStage1: 'ステージ1に戻る',
+
+                // Edit mode
+                topImage: '上の画像（スクラッチ前）',
+                bottomImage: '下の画像（スクラッチ後）',
+                clickOrDrop: 'クリックまたはドラッグ＆ドロップで画像をアップロード',
+                pairUpload: 'ペア画像一括登録',
+                pairUploadDesc: '上下画像のペアを一括登録（偶数枚選択で自動ペアリング）',
+                commentLabel: 'クリア時のコメント:',
+                commentPlaceholder: 'ステージクリア時に表示するメッセージを入力',
+                saveStage: 'このステージを保存',
+                resetStage: 'このステージをリセット',
+                resetFromCurrent: 'このステージ以降をリセット',
+                exportData: 'データをエクスポート',
+                importData: 'データをインポート',
+                editInfo1: '💡 各ステージの画像とコメントを設定できます',
+                editInfo2: '💾 エクスポート/インポートで全ステージのデータをバックアップ・復元できます',
+
+                // Progress and game
+                scratchedPercent: '削った割合: ',
+                nextStage: '次のステージへ →',
+                gameInfo: '💡 60%削るとメッセージが表示され、次に進めます（そのまま削り続けることも可能）',
+
+                // Ending screen
+                congratulations: '🎉 おめでとうございます！ 🎉',
+                allStagesClear: '全35ステージクリア！',
+                skillPerfect: 'あなたの削りスキルは最高です！',
+                foundAllImages: '隠れていた素敵な画像たちを<br>全て見つけることができましたね。',
+                wonderful: '本当に素晴らしい！<br>ありがとうございました！',
+                replay: 'もう一度プレイ',
+
+                // Dialog
+                yes: 'はい',
+                no: 'いいえ',
+
+                // Stage comments (default)
+                comments: [
+                    '桜が咲きました！\n春の訪れですね', '太陽が輝いています！\n素敵な一日になりそう', '月が美しいですね\n静かな夜です',
+                    '星が見えました！\nキラキラしています', '虹が出ました！\n幸運の予感です', 'アートの世界へ\nようこそ！',
+                    '音楽が聞こえます\nリズムに乗って', 'ダイヤモンド発見！\nとても貴重です', 'トロフィーゲット！\nあなたは素晴らしい',
+                    'プレゼントです！\nおめでとうございます！', '美しい花が咲いています\n素晴らしい景色ですね', '明るい光が差し込んでいます\n希望を感じます',
+                    '新しい発見がありました！\nワクワクしますね', '素晴らしい景色です\n心が癒されます', '温かい気持ちになります\n幸せですね',
+                    'ラッキーアイテムゲット！\n運気上昇中です', '新たな冒険の始まりです\n楽しみですね', 'すごい発見です！\n感動しました',
+                    '美しい瞬間です\n大切にしたいですね', 'おめでとうございます！\n素晴らしい成果です', 'クリエイティブな発見！\nインスピレーション湧きます',
+                    '素敵な音色ですね\n心地よいリズムです', '輝く宝物を見つけました\n価値ある発見です', '勝利の証です\n努力が実りました',
+                    '特別な贈り物ですね\nありがとうございます', '自然の美しさに\n感動しますね', '穏やかな時間が流れます\nリラックスできます',
+                    'ポジティブな気持ちに\nなれますね', '癒しの時間です\nゆっくりしましょう', '前向きな気持ちになります\n頑張れそうです',
+                    'エンターテイメントの世界へ\nようこそ', '芸術的な美しさですね\n感性が磨かれます', '音楽の力を感じます\n心が躍ります',
+                    '全ステージクリア！\n最高です！', '全てをやり遂げました！\nおめでとうございます！'
+                ]
+            },
+            en: {
+                // Mode buttons
+                playMode: '🎮 Play Mode',
+                editMode: '✏️ Edit Mode',
+
+                // Stage info
+                stage: 'Stage',
+                stageOf: '/',
+
+                // Brush controls
+                brushSize: 'Brush Size:',
+                autoScratchStart: 'Start Auto Scratch',
+                autoScratchStop: 'Stop Auto Scratch',
+                reset: 'Reset',
+                backToStage1: 'Back to Stage 1',
+
+                // Edit mode
+                topImage: 'Top Image (Before Scratch)',
+                bottomImage: 'Bottom Image (After Scratch)',
+                clickOrDrop: 'Click or drag & drop to upload image',
+                pairUpload: 'Batch Upload Pairs',
+                pairUploadDesc: 'Upload pairs of top/bottom images (even number of files auto-pairs)',
+                commentLabel: 'Clear Comment:',
+                commentPlaceholder: 'Enter message to display when stage is cleared',
+                saveStage: 'Save This Stage',
+                resetStage: 'Reset This Stage',
+                resetFromCurrent: 'Reset From This Stage',
+                exportData: 'Export Data',
+                importData: 'Import Data',
+                editInfo1: '💡 You can configure images and comments for each stage',
+                editInfo2: '💾 Use Export/Import to backup and restore all stage data',
+
+                // Progress and game
+                scratchedPercent: 'Scratched: ',
+                nextStage: 'Next Stage →',
+                gameInfo: '💡 Scratch 60% to see the message and proceed (you can continue scratching)',
+
+                // Ending screen
+                congratulations: '🎉 Congratulations! 🎉',
+                allStagesClear: 'All 35 Stages Clear!',
+                skillPerfect: 'Your scratching skills are perfect!',
+                foundAllImages: 'You found all the hidden<br>beautiful images!',
+                wonderful: 'Absolutely wonderful!<br>Thank you so much!',
+                replay: 'Play Again',
+
+                // Dialog
+                yes: 'Yes',
+                no: 'No',
+
+                // Stage comments (default)
+                comments: [
+                    'Cherry blossoms bloomed!\nSpring has arrived', 'The sun is shining!\nLooks like a wonderful day', 'The moon is beautiful\nA quiet night',
+                    'Stars appeared!\nThey\'re sparkling', 'A rainbow appeared!\nFeeling lucky', 'Welcome to\nthe world of art!',
+                    'Music is playing\nFeel the rhythm', 'Diamond found!\nVery precious', 'Trophy get!\nYou are amazing',
+                    'A present for you!\nCongratulations!', 'Beautiful flowers blooming\nWhat a wonderful view', 'Bright light shining\nFeeling hopeful',
+                    'New discovery!\nHow exciting', 'Amazing scenery\nSo soothing', 'Feeling warm inside\nSo happy',
+                    'Lucky item get!\nLuck is rising', 'A new adventure begins\nHow exciting', 'Amazing discovery!\nSo moving',
+                    'A beautiful moment\nLet\'s treasure it', 'Congratulations!\nWonderful achievement', 'Creative discovery!\nFeeling inspired',
+                    'Lovely melody\nPleasant rhythm', 'Found a shining treasure\nValuable discovery', 'Symbol of victory\nEffort paid off',
+                    'A special gift\nThank you so much', 'Beauty of nature\nSo moving', 'Peaceful time flowing\nSo relaxing',
+                    'Feeling positive\nGreat vibes', 'Healing time\nLet\'s relax', 'Feeling motivated\nReady to go',
+                    'Welcome to the world\nof entertainment', 'Artistic beauty\nRefined senses', 'Feel the power of music\nHeart is dancing',
+                    'All stages clear!\nPerfect!', 'You did it all!\nCongratulations!'
+                ]
+            }
+        };
+
+        // Get language from localStorage or default to Japanese
+        let currentLanguage = localStorage.getItem('appLanguage') || 'ja';
+
+        // Translation getter function
+        function t(key) {
+            return translations[currentLanguage][key] || key;
+        }
+
+        // Get translated comment by index
+        function tc(index) {
+            return translations[currentLanguage].comments[index] || '';
+        }
+
+        // Switch language
+        function switchLanguage(lang) {
+            currentLanguage = lang;
+            localStorage.setItem('appLanguage', lang);
+            document.documentElement.lang = lang;
+            updateAllText();
+        }
+
+        // Update all text content when language changes
+        function updateAllText() {
+            // Update mode buttons
+            document.getElementById('playModeBtn').textContent = t('playMode');
+            document.getElementById('editModeBtn').textContent = t('editMode');
+
+            // Update stage info
+            updateStageDisplay();
+
+            // Update brush controls
+            document.querySelector('.brush-controls label').textContent = t('brushSize');
+            updateAutoScratchButton();
+            document.getElementById('resetBtn').textContent = t('reset');
+            document.getElementById('backToStage1Btn').textContent = t('backToStage1');
+
+            // Update edit mode
+            document.querySelector('.upload-box h3:nth-child(1)').textContent = t('topImage');
+            const uploadBoxes = document.querySelectorAll('.upload-box');
+            if (uploadBoxes[0]) {
+                const topP = uploadBoxes[0].querySelector('p');
+                if (topP) topP.textContent = t('clickOrDrop');
+            }
+            if (uploadBoxes[1]) {
+                uploadBoxes[1].querySelector('h3').textContent = t('bottomImage');
+                const bottomP = uploadBoxes[1].querySelector('p');
+                if (bottomP) bottomP.textContent = t('clickOrDrop');
+            }
+            if (uploadBoxes[2]) {
+                uploadBoxes[2].querySelector('h3').textContent = t('pairUpload');
+                const pairP = uploadBoxes[2].querySelector('p');
+                if (pairP) pairP.textContent = t('pairUploadDesc');
+            }
+
+            document.querySelector('.comment-input-area label').textContent = t('commentLabel');
+            document.getElementById('commentInput').placeholder = t('commentPlaceholder');
+            document.getElementById('saveStageBtn').textContent = t('saveStage');
+            document.getElementById('resetStageBtn').textContent = t('resetStage');
+            document.getElementById('resetFromCurrentBtn').textContent = t('resetFromCurrent');
+            document.getElementById('exportDataBtn').textContent = t('exportData');
+            document.getElementById('importDataBtn').textContent = t('importData');
+
+            const infoTexts = document.querySelectorAll('.edit-mode .info');
+            if (infoTexts[0]) infoTexts[0].innerHTML = t('editInfo1') + '<br>' + t('editInfo2');
+
+            // Update progress text
+            updateProgress();
+
+            // Update next button
+            document.getElementById('nextBtn').textContent = t('nextStage');
+
+            // Update game info
+            const gameInfo = document.querySelector('.game-content > .info');
+            if (gameInfo) gameInfo.textContent = t('gameInfo');
+
+            // Update ending screen
+            document.querySelector('.ending-screen h2').textContent = t('congratulations');
+            const endingP = document.querySelector('.ending-screen p');
+            if (endingP) {
+                endingP.innerHTML = t('allStagesClear') + '<br>' +
+                                    t('skillPerfect') + '<br><br>' +
+                                    t('foundAllImages') + '<br><br>' +
+                                    t('wonderful');
+            }
+            document.getElementById('replayBtn').textContent = t('replay');
+
+            // Update dialog buttons
+            document.getElementById('confirmYes').textContent = t('yes');
+            document.getElementById('confirmNo').textContent = t('no');
+
+            // Update language toggle button text
+            const langToggle = document.getElementById('langToggle');
+            if (langToggle) {
+                langToggle.textContent = currentLanguage === 'ja' ? '🌐 EN' : '🌐 JP';
+            }
+        }
+
+        // Update stage display
+        function updateStageDisplay() {
+            const stageNum = document.getElementById('stageNumber');
+            if (stageNum) {
+                stageNum.textContent = `${t('stage')} ${currentStage + 1} ${t('stageOf')} 35`;
+            }
+        }
+
+        // Update auto-scratch button text
+        function updateAutoScratchButton() {
+            const btn = document.getElementById('autoScratchBtn');
+            if (btn) {
+                btn.textContent = autoScratching ? t('autoScratchStop') : t('autoScratchStart');
+            }
+        }
+        // ========== End Translation System ==========
+
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         const brushSizeInput = document.getElementById('brushSize');
@@ -702,21 +951,6 @@
                           '🍌', '🍉', '🍇', '🍓', '🍑', '🍒', '🍍', '⚽', '🏀', '🎯',
                           '🎪', '🎭', '🎬', '🎤', '🎧'];
 
-            const comments = [
-                '桜が咲きました！\n春の訪れですね', '太陽が輝いています！\n素敵な一日になりそう', '月が美しいですね\n静かな夜です',
-                '星が見えました！\nキラキラしています', '虹が出ました！\n幸運の予感です', 'アートの世界へ\nようこそ！',
-                '音楽が聞こえます\nリズムに乗って', 'ダイヤモンド発見！\nとても貴重です', 'トロフィーゲット！\nあなたは素晴らしい',
-                'プレゼントです！\nおめでとうございます！', '美しい花が咲いています\n素晴らしい景色ですね', '明るい光が差し込んでいます\n希望を感じます',
-                '新しい発見がありました！\nワクワクしますね', '素晴らしい景色です\n心が癒されます', '温かい気持ちになります\n幸せですね',
-                'ラッキーアイテムゲット！\n運気上昇中です', '新たな冒険の始まりです\n楽しみですね', 'すごい発見です！\n感動しました',
-                '美しい瞬間です\n大切にしたいですね', 'おめでとうございます！\n素晴らしい成果です', 'クリエイティブな発見！\nインスピレーション湧きます',
-                '素敵な音色ですね\n心地よいリズムです', '輝く宝物を見つけました\n価値ある発見です', '勝利の証です\n努力が実りました',
-                '特別な贈り物ですね\nありがとうございます', '自然の美しさに\n感動しますね', '穏やかな時間が流れます\nリラックスできます',
-                'ポジティブな気持ちに\nなれますね', '癒しの時間です\nゆっくりしましょう', '前向きな気持ちになります\n頑張れそうです',
-                'エンターテイメントの世界へ\nようこそ', '芸術的な美しさですね\n感性が磨かれます', '音楽の力を感じます\n心が躍ります',
-                '全ステージクリア！\n最高です！', '全てをやり遂げました！\nおめでとうございます！'
-            ];
-
             const stages = [];
             for (let i = 0; i < 35; i++) {
                 stages.push({
@@ -724,7 +958,7 @@
                     bottomColor: colors[(i + 17) % 35],
                     topText: '？',
                     bottomText: emojis[i],
-                    comment: comments[i],
+                    comment: tc(i), // Use translated comment
                     topImage: null,
                     bottomImage: null
                 });
@@ -912,7 +1146,7 @@
             for (let i = 0; i < stages.length; i++) {
                 const btn = document.createElement('button');
                 btn.className = 'stage-btn' + (i === currentEditStage ? ' active' : '');
-                btn.textContent = `ステージ ${i + 1}`;
+                btn.textContent = `${t('stage')} ${i + 1}`;
                 btn.onclick = () => selectEditStage(i);
                 stageSelector.appendChild(btn);
             }
@@ -1600,7 +1834,7 @@
             currentStage = stageIndex;
             stageCleared = false;
             commentBubble.classList.remove('show');
-            stageNumber.textContent = `ステージ ${stageIndex + 1} / ${stages.length}`;
+            stageNumber.textContent = `${t('stage')} ${stageIndex + 1} ${t('stageOf')} ${stages.length}`;
             updatePlayStageButtons();
 
             const stage = stages[stageIndex];
@@ -1824,7 +2058,7 @@
             const percentage = Math.round((transparentPixels / totalPixels) * 100);
 
             progressFill.style.width = percentage + '%';
-            progressText.textContent = `削った割合: ${percentage}%`;
+            progressText.textContent = `${t('scratchedPercent')}${percentage}%`;
 
             // オートスクラッチモード: 100%（ワイパーは95%）で自動的に次のステージへ
             const completeThreshold = (autoScratchPattern === 'wiper') ? 95 : 100;
@@ -1919,7 +2153,7 @@
 
             autoScratching = true;
             selectRandomPattern();
-            autoScratchBtn.textContent = 'オートスクラッチ停止';
+            autoScratchBtn.textContent = t('autoScratchStop');
 
             autoScratchInterval = setInterval(() => {
                 if (!topImage || !bottomImage || !scratchedCanvas) {
@@ -2080,7 +2314,7 @@
 
             autoScratching = false;
             isTransitioning = false;
-            autoScratchBtn.textContent = 'オートスクラッチ開始';
+            autoScratchBtn.textContent = t('autoScratchStart');
 
             if (autoScratchInterval) {
                 clearInterval(autoScratchInterval);
@@ -2151,9 +2385,21 @@
             loadStage(0);
         });
 
+        // 言語切り替えボタン
+        document.getElementById('langToggle').addEventListener('click', () => {
+            const newLang = currentLanguage === 'ja' ? 'en' : 'ja';
+            switchLanguage(newLang);
+        });
+
+        // ページ読み込み時に言語を設定
+        document.documentElement.lang = currentLanguage;
+
         // ゲーム開始
         initPlayStageSelector();
         loadStage(0);
+
+        // 初期テキストを更新
+        updateAllText();
 
         /*
         ========================================
